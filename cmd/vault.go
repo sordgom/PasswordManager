@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"password-manager/pkg"
 
@@ -19,24 +20,39 @@ var vaultCmd = &cobra.Command{
 	vault_name: the name of the vault
 	master_password: the master password for the vault`,
 	Run: func(cmd *cobra.Command, args []string) {
-		shouldGenerate, _ := cmd.Flags().GetBool("generate")
+		client := appContext.Client
+		vault := cmd.Context().Value("vault").(*pkg.Vault)
+		if vault == nil {
+			fmt.Println("Failed to retrieve vault from context")
+			return
+		}
 
+		shouldGenerate, _ := cmd.Flags().GetBool("generate")
 		if len(args) > 2 || (len(args) == 1 && !shouldGenerate) || len(args) == 0 {
 			fmt.Println("Please provide a name and a master password for the vault")
 			return
 		}
+
 		var hashedPassword string
 		if shouldGenerate {
-			hashedPassword = pkg.GenerateHash()
+			hashedPassword = pkg.GenerateRandomHash()
 		} else {
 			hashedPassword = args[1]
 		}
-		vault := pkg.CreateVault(args[0], hashedPassword)
+
+		vault.New(args[0], hashedPassword)
+
+		err := pkg.SaveVaultToRedis(client, vault)
+		if err != nil {
+			log.Fatalf("Failed to save vault: %v", err)
+		}
+
 		fmt.Printf("vault %s created", vault.Name)
 	},
 }
 
 func init() {
-	vaultCmd.Flags().BoolP("generate", "g", false, "generate a master password")
 	rootCmd.AddCommand(vaultCmd)
+
+	vaultCmd.Flags().BoolP("generate", "g", false, "generate a master password")
 }
