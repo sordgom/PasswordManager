@@ -19,76 +19,78 @@ var passwordCmd = &cobra.Command{
 	Short: "Manage your passwords",
 	Long: `Usage: Konache password [command]
 	command: [add, put, list, get, del]`,
-	Run: func(cmd *cobra.Command, args []string) {
-		appContext, _ := load()
+	Run: Run,
+}
 
-		// Local flags
-		addFlag, _ := cmd.Flags().GetBool("add")
-		modifyFlag, _ := cmd.Flags().GetBool("put")
-		listFlag, _ := cmd.Flags().GetBool("list")
-		getFlag, _ := cmd.Flags().GetBool("get")
-		delFlag, _ := cmd.Flags().GetBool("del")
+func Run(cmd *cobra.Command, args []string) {
+	appContext, _ := load()
 
-		// Table setup
-		headerFmt := color.New(color.FgBlue, color.Underline).SprintfFunc()
-		columnFmt := color.New(color.FgGreen).SprintfFunc()
+	// Local flags
+	addFlag, _ := cmd.Flags().GetBool("add")
+	modifyFlag, _ := cmd.Flags().GetBool("put")
+	listFlag, _ := cmd.Flags().GetBool("list")
+	getFlag, _ := cmd.Flags().GetBool("get")
+	delFlag, _ := cmd.Flags().GetBool("del")
 
-		if addFlag {
-			fmt.Println("Adding password")
-			if len(args) != 5 {
-				log.Fatal("Please provide the name, url, username, password and hint for the password")
-				return
-			}
+	// Table setup
+	headerFmt := color.New(color.FgBlue, color.Underline).SprintfFunc()
+	columnFmt := color.New(color.FgGreen).SprintfFunc()
 
-			password := appContext.Vault.NewPassword(args[0], args[1], args[2], args[3], args[4])
-			appContext.Vault.AppendPassword(password)
-
-			err := pkg.SaveVaultToRedis(appContext.Client, appContext.Vault)
-			if err != nil {
-				log.Fatalf("Failed to save vault: %v", err)
-			}
-
-			fmt.Printf("\nPassword was added successfully")
+	if addFlag {
+		fmt.Println("Adding password")
+		if len(args) != 5 {
+			log.Fatal("Please provide the name, url, username, password and hint for the password")
+			return
 		}
-		if listFlag {
-			fmt.Println("Listing all passwords from Vault", appContext.Vault.Name)
-			// Fix the formatting
 
-			tbl := table.New("Name", "URL", "Hint")
-			tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
+		password := appContext.Vault.NewPassword(args[0], args[1], args[2], args[3], args[4])
+		appContext.Vault.AppendPassword(password)
 
-			passwords := appContext.Vault.Passwords
-			for _, password := range passwords {
-				tbl.AddRow(password.Name, password.Url, password.Hint)
-			}
-			tbl.Print()
+		err := pkg.SaveVaultToRedis(appContext.Client, appContext.Vault)
+		if err != nil {
+			log.Fatalf("Failed to save vault: %v", err)
 		}
-		if modifyFlag {
-			fmt.Println("Updating password")
-			if len(args) != 3 {
-				log.Fatal("Please provide the password name, master password and new password")
-				return
-			}
 
-			err := appContext.Vault.UpdatePassword(args[0], args[1], args[2])
-			if err != nil {
-				log.Fatalf("\nFailed to update password: %s", args[0])
-			}
+		fmt.Printf("\nPassword was added successfully")
+	}
+	if listFlag {
+		fmt.Println("Listing all passwords from Vault", appContext.Vault.Name)
+		// Fix the formatting
 
-			err = pkg.SaveVaultToRedis(appContext.Client, appContext.Vault)
-			if err != nil {
-				log.Fatalf("Failed to save vault: %v", err)
-			}
+		tbl := table.New("Name", "URL", "Hint")
+		tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
 
-			fmt.Printf("\nPassword was updated successfully")
+		passwords := appContext.Vault.Passwords
+		for _, password := range passwords {
+			tbl.AddRow(password.Name, password.Url, password.Hint)
 		}
-		if getFlag {
-			fmt.Println("Getting password")
+		tbl.Print()
+	}
+	if modifyFlag {
+		fmt.Println("Updating password")
+		if len(args) != 3 {
+			log.Fatal("Please provide the password name, master password and new password")
+			return
 		}
-		if delFlag {
-			fmt.Println("Deleting password")
+
+		err := appContext.Vault.UpdatePassword(args[0], args[1], args[2])
+		if err != nil {
+			log.Fatalf("\nFailed to update password: %s", args[0])
 		}
-	},
+
+		err = pkg.SaveVaultToRedis(appContext.Client, appContext.Vault)
+		if err != nil {
+			log.Fatalf("Failed to save vault: %v", err)
+		}
+
+		fmt.Printf("\nPassword was updated successfully")
+	}
+	if getFlag {
+		fmt.Println("Getting password")
+	}
+	if delFlag {
+		fmt.Println("Deleting password")
+	}
 }
 
 func init() {
