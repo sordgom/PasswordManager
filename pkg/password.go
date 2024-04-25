@@ -47,9 +47,9 @@ func (v *Vault) NewPassword(name, url, username, password, hint string) Password
 	}
 }
 
-func (v *Vault) GetPassword(id uuid.UUID) (Password, error) {
-	for _, password := range v.Passwords {
-		if password.Id == id {
+func (v *Vault) GetPassword(name string) (Password, error) {
+	for _, password := range v.passwords {
+		if password.Name == name {
 			return password, nil
 		}
 	}
@@ -59,7 +59,7 @@ func (v *Vault) GetPassword(id uuid.UUID) (Password, error) {
 func (v *Vault) GetPasswords() [][]string {
 	// Return a list of password names and hints
 	var result [][]string
-	for _, password := range v.Passwords {
+	for _, password := range v.passwords {
 		result = append(result, []string{password.Name, password.Hint})
 	}
 	return result
@@ -70,7 +70,7 @@ func (v *Vault) UpdatePassword(name, masterPassword, password string) error {
 		fmt.Println("incorrect master password")
 		return errors.New("incorrect master password")
 	}
-	for i, passwordVar := range v.Passwords {
+	for i, passwordVar := range v.passwords {
 		if passwordVar.Name == name {
 			salt, err := RandomSecret(16)
 			if err != nil {
@@ -82,8 +82,8 @@ func (v *Vault) UpdatePassword(name, masterPassword, password string) error {
 				log.Fatal(err)
 			}
 
-			v.Passwords[i].Name = name
-			v.Passwords[i].hash = hash
+			v.passwords[i].Name = name
+			v.passwords[i].hash = hash
 
 			return nil
 		}
@@ -92,9 +92,9 @@ func (v *Vault) UpdatePassword(name, masterPassword, password string) error {
 }
 
 func (v *Vault) DeletePassword(id uuid.UUID) error {
-	for i, password := range v.Passwords {
+	for i, password := range v.passwords {
 		if password.Id == id {
-			v.Passwords = append(v.Passwords[:i], v.Passwords[i+1:]...)
+			v.passwords = append(v.passwords[:i], v.passwords[i+1:]...)
 			return nil
 		}
 	}
@@ -102,7 +102,7 @@ func (v *Vault) DeletePassword(id uuid.UUID) error {
 }
 
 func (vault *Vault) AppendPassword(password Password) {
-	vault.Passwords = append(vault.Passwords, password)
+	vault.passwords = append(vault.passwords, password)
 }
 
 func (p *Password) ReadPassword(masterPassword string) string {

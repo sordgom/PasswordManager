@@ -3,6 +3,7 @@ package pkg
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -11,18 +12,26 @@ type Vault struct {
 	Name           string
 	masterPassword string
 
-	Passwords []Password
+	passwords []Password
 }
 
-func (v *Vault) New(name, masterPassword string) {
-	v.Name = name
-	v.masterPassword = masterPassword
+func New(name, masterPassword string) Vault {
+	return Vault{
+		Name:           name,
+		masterPassword: masterPassword,
+	}
+}
+
+func (v *Vault) VerifyMasterPassword(newPassword string) bool {
+	fmt.Print("MP", v.masterPassword)
+	return v.masterPassword == newPassword
 }
 
 func SaveVaultToRedis(client *redis.Client, vault *Vault) error {
 	ctx := context.Background()
 
 	serializedVault, err := json.Marshal(vault)
+	fmt.Printf("SV %s", serializedVault)
 	if err != nil {
 		return err
 	}

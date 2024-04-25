@@ -4,8 +4,10 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"os"
 	"password-manager/pkg"
 
 	"github.com/fatih/color"
@@ -55,15 +57,15 @@ func Run(cmd *cobra.Command, args []string) {
 	}
 	if listFlag {
 		fmt.Println("Listing all passwords from Vault", appContext.Vault.Name)
-		// Fix the formatting
 
 		tbl := table.New("Name", "URL", "Hint")
 		tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
 
-		passwords := appContext.Vault.Passwords
+		passwords := appContext.Vault.GetPasswords()
 		for _, password := range passwords {
-			tbl.AddRow(password.Name, password.Url, password.Hint)
+			tbl.AddRow(password[0], password[1], password[2])
 		}
+
 		tbl.Print()
 	}
 	if modifyFlag {
@@ -86,7 +88,29 @@ func Run(cmd *cobra.Command, args []string) {
 		fmt.Printf("\nPassword was updated successfully")
 	}
 	if getFlag {
-		fmt.Println("Getting password")
+		fmt.Println("Listing The password value from Vault", appContext.Vault.Name)
+
+		if len(args) != 1 {
+			log.Fatal("Please provide the password name")
+			return
+		}
+		password, err := appContext.Vault.GetPassword(args[0])
+		if err != nil {
+			log.Fatalf("\nFailed to get password: %s", args[0])
+		}
+
+		// Ask user to input master password
+		fmt.Print("Enter master password: ")
+		masterPassword, err := readPasswordFromStdin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to read password: %v\n", err)
+			os.Exit(1)
+		}
+		if !appContext.Vault.VerifyMasterPassword(masterPassword) {
+			fmt.Println("Master password is incorrect")
+			return
+		}
+		fmt.Println("Password:", password.ReadPassword(masterPassword))
 	}
 	if delFlag {
 		fmt.Println("Deleting password")
@@ -102,4 +126,13 @@ func init() {
 	passwordCmd.Flags().BoolP("get", "g", false, "Get a specific password from the vault")
 	passwordCmd.Flags().BoolP("del", "d", false, "Delete a password from the vault")
 	passwordCmd.Flags().StringP("vault", "v", "", "Vault name")
+}
+
+func readPasswordFromStdin() (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	password, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	return password[:len(password)-1], nil
 }

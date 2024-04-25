@@ -20,29 +20,30 @@ var vaultCmd = &cobra.Command{
 	vault_name: the name of the vault
 	master_password: the master password for the vault`,
 	Run: func(cmd *cobra.Command, args []string) {
-		appContext, _ := load()
+		client := appContext.Client
+		vaultFlag, _ := cmd.Flags().GetString("vault")
 
 		shouldGenerate, _ := cmd.Flags().GetBool("generate")
-		if len(args) > 2 || (len(args) == 1 && !shouldGenerate) || len(args) == 0 {
+		if len(args) > 1 || (len(args) == 0 && !shouldGenerate) {
 			fmt.Println("Please provide a name and a master password for the vault")
 			return
 		}
 
-		var hashedPassword string
+		var hashedPassword string //Should be hashed first
 		if shouldGenerate {
 			hashedPassword = pkg.GenerateRandomHash()
 		} else {
-			hashedPassword = args[1]
+			hashedPassword = args[0]
 		}
 
-		appContext.Vault.New(args[0], hashedPassword)
+		vault := pkg.New(vaultFlag, hashedPassword)
 
-		err := pkg.SaveVaultToRedis(appContext.Client, appContext.Vault)
+		err := pkg.SaveVaultToRedis(client, &vault)
 		if err != nil {
 			log.Fatalf("Failed to save vault: %v", err)
 		}
 
-		fmt.Printf("vault %s created", appContext.Vault.Name)
+		fmt.Printf("vault %s created", vault.Name)
 	},
 }
 
