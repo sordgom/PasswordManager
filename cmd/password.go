@@ -17,14 +17,6 @@ var passwordCmd = &cobra.Command{
 	Short: "Manage your passwords",
 	Long: `Usage: Konache password [command]
 	command: [add, put, list, get, del]`,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		client := appContext.Client
-		vault, err := pkg.LoadVaultFromRedis(client)
-		if err != nil {
-			log.Fatalf("Failed to load vault: %v", err)
-		}
-		appContext.Vault = vault
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		client := appContext.Client
 		vault := cmd.Context().Value("vault").(*pkg.Vault)
@@ -34,10 +26,10 @@ var passwordCmd = &cobra.Command{
 		}
 
 		addFlag, _ := cmd.Flags().GetBool("add")
-		modifyFlag, _ := cmd.Flags().GetString("put")
+		modifyFlag, _ := cmd.Flags().GetBool("put")
 		listFlag, _ := cmd.Flags().GetBool("list")
-		getFlag, _ := cmd.Flags().GetString("get")
-		delFlag, _ := cmd.Flags().GetString("del")
+		getFlag, _ := cmd.Flags().GetBool("get")
+		delFlag, _ := cmd.Flags().GetBool("del")
 
 		if addFlag {
 			fmt.Println("Adding password")
@@ -65,13 +57,29 @@ var passwordCmd = &cobra.Command{
 				fmt.Println(password.Name, " | ", password.Url, " | ", password.Hint, " | ")
 			}
 		}
-		if modifyFlag != "" {
-			fmt.Println("Modifying password")
+		if modifyFlag {
+			fmt.Println("Updating password")
+			if len(args) != 3 {
+				log.Fatal("Please provide the password name, master password and new password")
+				return
+			}
+
+			err := vault.UpdatePassword(args[0], args[1], args[2])
+			if err != nil {
+				log.Fatalf("\nFailed to update password: %s", args[0])
+			}
+
+			err = pkg.SaveVaultToRedis(client, vault)
+			if err != nil {
+				log.Fatalf("Failed to save vault: %v", err)
+			}
+
+			fmt.Printf("\nPassword was updated successfully")
 		}
-		if getFlag != "" {
+		if getFlag {
 			fmt.Println("Getting password")
 		}
-		if delFlag != "" {
+		if delFlag {
 			fmt.Println("Deleting password")
 		}
 	},
@@ -81,8 +89,8 @@ func init() {
 	rootCmd.AddCommand(passwordCmd)
 
 	passwordCmd.Flags().BoolP("add", "a", false, "Add a new password to the vault")
-	passwordCmd.Flags().StringP("put", "p", "", "Modify an existing password in the vault")
-	passwordCmd.Flags().Bool("list", false, "List all passwords in the vault")
-	passwordCmd.Flags().StringP("get", "g", "", "Get a specific password from the vault")
-	passwordCmd.Flags().StringP("del", "d", "", "Delete a password from the vault")
+	passwordCmd.Flags().BoolP("list", "l", false, "List all passwords in the vault")
+	passwordCmd.Flags().BoolP("put", "p", false, "Modify an existing password in the vault")
+	passwordCmd.Flags().BoolP("get", "g", false, "Get a specific password from the vault")
+	passwordCmd.Flags().BoolP("del", "d", false, "Delete a password from the vault")
 }

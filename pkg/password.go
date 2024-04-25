@@ -3,6 +3,7 @@ package pkg
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/google/uuid"
@@ -64,9 +65,13 @@ func (v *Vault) GetPasswords() [][]string {
 	return result
 }
 
-func (v *Vault) UpdatePassword(id uuid.UUID, name, url, username, password, hint, masterPassword string) error {
+func (v *Vault) UpdatePassword(name, masterPassword, password string) error {
+	if v.masterPassword != masterPassword {
+		fmt.Println("incorrect master password")
+		return errors.New("incorrect master password")
+	}
 	for i, passwordVar := range v.Passwords {
-		if passwordVar.Id == id {
+		if passwordVar.Name == name {
 			salt, err := RandomSecret(16)
 			if err != nil {
 				log.Fatal(err)
@@ -77,14 +82,9 @@ func (v *Vault) UpdatePassword(id uuid.UUID, name, url, username, password, hint
 				log.Fatal(err)
 			}
 
-			v.Passwords[i] = Password{
-				Id:       id,
-				Name:     name,
-				Url:      url,
-				username: username,
-				hash:     hash,
-				Hint:     hint,
-			}
+			v.Passwords[i].Name = name
+			v.Passwords[i].hash = hash
+
 			return nil
 		}
 	}
