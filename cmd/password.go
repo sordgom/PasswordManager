@@ -8,6 +8,8 @@ import (
 	"log"
 	"password-manager/pkg"
 
+	"github.com/fatih/color"
+	"github.com/rodaine/table"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +28,10 @@ var passwordCmd = &cobra.Command{
 		listFlag, _ := cmd.Flags().GetBool("list")
 		getFlag, _ := cmd.Flags().GetBool("get")
 		delFlag, _ := cmd.Flags().GetBool("del")
+
+		// Table setup
+		headerFmt := color.New(color.FgBlue, color.Underline).SprintfFunc()
+		columnFmt := color.New(color.FgGreen).SprintfFunc()
 
 		if addFlag {
 			fmt.Println("Adding password")
@@ -47,11 +53,15 @@ var passwordCmd = &cobra.Command{
 		if listFlag {
 			fmt.Println("Listing all passwords from Vault", appContext.Vault.Name)
 			// Fix the formatting
-			fmt.Println("Name | Url | Hint")
+
+			tbl := table.New("Name", "URL", "Hint")
+			tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
+
 			passwords := appContext.Vault.Passwords
 			for _, password := range passwords {
-				fmt.Println(password.Name, " | ", password.Url, " | ", password.Hint, " | ")
+				tbl.AddRow(password.Name, password.Url, password.Hint)
 			}
+			tbl.Print()
 		}
 		if modifyFlag {
 			fmt.Println("Updating password")
