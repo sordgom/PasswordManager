@@ -27,12 +27,12 @@ func SaveVaultToRedis(client *redis.Client, vault *Vault) error {
 		return err
 	}
 
-	return client.Set(ctx, "vaultKey", serializedVault, 0).Err() //Will make this better I swear
+	return client.Set(ctx, vault.Name, serializedVault, 0).Err() //Will make this better I swear
 }
 
-func LoadVaultFromRedis(client *redis.Client) (*Vault, error) {
+func LoadVaultFromRedis(client *redis.Client, vaultName string) (*Vault, error) {
 	ctx := context.Background()
-	serializedVault, err := client.Get(ctx, "vaultKey").Bytes()
+	serializedVault, err := client.Get(ctx, vaultName).Bytes()
 	if err != nil {
 		return nil, err
 	}

@@ -17,6 +17,8 @@ type AppContext struct {
 	Vault  *pkg.Vault
 }
 
+var appContext *AppContext
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "Konache",
@@ -28,30 +30,29 @@ Konache is a  is a CLI Password manager that allows users to:
 - List all the passwords in a vault.
 - Retrieve a password from a vault.
 PS: we never store or know about your passwords.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		ctx := cmd.Context()
-		vault := ctx.Value("vault").(*pkg.Vault)
-		fmt.Println("Vault accessed within Run:", vault)
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		vaultFlag, _ := cmd.Flags().GetString("vault")
+		if vaultFlag == "" {
+			fmt.Println("Please specify a vault with -v or --vault")
+			return
+		}
+		vault, err := pkg.LoadVaultFromRedis(appContext.Client, vaultFlag)
+		if err != nil {
+			fmt.Errorf("failed to load vault: %v", err)
+			return
+		}
+		appContext.Vault = vault
 	},
 }
-
-var appContext *AppContext
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() error {
 	ctx := context.Background()
 	client := initRedisClient()
-
-	vault, err := pkg.LoadVaultFromRedis(client)
-	if err != nil {
-		return fmt.Errorf("failed to load vault: %v", err)
-	}
 	appContext = &AppContext{
 		Client: client,
-		Vault:  vault,
 	}
-	ctx = context.WithValue(ctx, "vault", vault) //I dont think this is necessary
 	ctx = context.WithValue(ctx, "client", client)
 	return rootCmd.ExecuteContext(ctx)
 }
@@ -62,11 +63,11 @@ func init() {
 	// will be global for your application.
 
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.password-manager.yaml)")
+	rootCmd.PersistentFlags().StringP("vault", "v", "", "Vault")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	rootCmd.Flags().StringP("vault", "v", "", "Vault")
 }
 
 func initRedisClient() *redis.Client {

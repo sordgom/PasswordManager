@@ -18,13 +18,9 @@ var passwordCmd = &cobra.Command{
 	Long: `Usage: Konache password [command]
 	command: [add, put, list, get, del]`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := appContext.Client
-		vault := cmd.Context().Value("vault").(*pkg.Vault)
-		if vault == nil {
-			fmt.Println("Failed to retrieve vault from context")
-			return
-		}
+		appContext, _ := load()
 
+		// Local flags
 		addFlag, _ := cmd.Flags().GetBool("add")
 		modifyFlag, _ := cmd.Flags().GetBool("put")
 		listFlag, _ := cmd.Flags().GetBool("list")
@@ -38,10 +34,10 @@ var passwordCmd = &cobra.Command{
 				return
 			}
 
-			password := vault.NewPassword(args[0], args[1], args[2], args[3], args[4])
-			vault.AppendPassword(password)
+			password := appContext.Vault.NewPassword(args[0], args[1], args[2], args[3], args[4])
+			appContext.Vault.AppendPassword(password)
 
-			err := pkg.SaveVaultToRedis(client, vault)
+			err := pkg.SaveVaultToRedis(appContext.Client, appContext.Vault)
 			if err != nil {
 				log.Fatalf("Failed to save vault: %v", err)
 			}
@@ -49,10 +45,10 @@ var passwordCmd = &cobra.Command{
 			fmt.Printf("\nPassword was added successfully")
 		}
 		if listFlag {
-			fmt.Println("Listing all passwords from Vault", vault.Name)
+			fmt.Println("Listing all passwords from Vault", appContext.Vault.Name)
 			// Fix the formatting
 			fmt.Println("Name | Url | Hint")
-			passwords := vault.Passwords
+			passwords := appContext.Vault.Passwords
 			for _, password := range passwords {
 				fmt.Println(password.Name, " | ", password.Url, " | ", password.Hint, " | ")
 			}
@@ -64,12 +60,12 @@ var passwordCmd = &cobra.Command{
 				return
 			}
 
-			err := vault.UpdatePassword(args[0], args[1], args[2])
+			err := appContext.Vault.UpdatePassword(args[0], args[1], args[2])
 			if err != nil {
 				log.Fatalf("\nFailed to update password: %s", args[0])
 			}
 
-			err = pkg.SaveVaultToRedis(client, vault)
+			err = pkg.SaveVaultToRedis(appContext.Client, appContext.Vault)
 			if err != nil {
 				log.Fatalf("Failed to save vault: %v", err)
 			}
@@ -93,4 +89,5 @@ func init() {
 	passwordCmd.Flags().BoolP("put", "p", false, "Modify an existing password in the vault")
 	passwordCmd.Flags().BoolP("get", "g", false, "Get a specific password from the vault")
 	passwordCmd.Flags().BoolP("del", "d", false, "Delete a password from the vault")
+	passwordCmd.Flags().StringP("vault", "v", "", "Vault name")
 }
