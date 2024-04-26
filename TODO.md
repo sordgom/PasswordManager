@@ -1,3 +1,4 @@
-1- Currently the master password is not encrypted in the database. This is a security risk and should be fixed. [X]
-2- I'm currently hashing the password, not encrypting it with a key(master key) [X]
-3- figure out a way to automate logging into websites that are part of the password manager
+1. figure out a way to automate logging into websites that are part of the password manager
+2. Add a logger
+3. Proper Tests
+4. Finish the basic features

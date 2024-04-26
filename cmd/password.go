@@ -45,8 +45,7 @@ func Run(cmd *cobra.Command, args []string) {
 			return
 		}
 
-		password := appContext.Vault.NewPassword(args[0], args[1], args[2], args[3], args[4])
-		appContext.Vault.AppendPassword(password)
+		appContext.Vault.NewPassword(args[0], args[1], args[2], args[3], args[4])
 
 		err := pkg.SaveVaultToRedis(appContext.Client, appContext.Vault)
 		if err != nil {
@@ -89,14 +88,9 @@ func Run(cmd *cobra.Command, args []string) {
 	}
 	if getFlag {
 		fmt.Println("Listing The password value from Vault", appContext.Vault.Name)
-
 		if len(args) != 1 {
 			log.Fatal("Please provide the password name")
 			return
-		}
-		password, err := appContext.Vault.GetPassword(args[0])
-		if err != nil {
-			log.Fatalf("\nFailed to get password: %s", args[0])
 		}
 
 		// Ask user to input master password
@@ -111,7 +105,13 @@ func Run(cmd *cobra.Command, args []string) {
 			return
 		}
 
-		fmt.Println("Password:", appContext.Vault.ReadPassword(&password))
+		password, err := appContext.Vault.GetPassword(args[0])
+		if err != nil {
+			log.Fatalf("\nFailed to get password: %s", args[0])
+		}
+
+		passwordString := appContext.Vault.ReadPassword(&password)
+		fmt.Println("Password:", passwordString)
 	}
 	if delFlag {
 		fmt.Println("Deleting password")
