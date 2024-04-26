@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 
@@ -60,8 +61,15 @@ func DeriveKey(MasterPassword string, salt []byte) []byte {
 	return argon2.IDKey([]byte(MasterPassword), salt, 1, 64*1024, 4, 32) // Returns a 32-byte key
 }
 
-func (v *Vault) EncryptData(data string, key []byte) (string, error) {
-	block, err := aes.NewCipher(key)
+func (v *Vault) EncryptPassword(data string) (string, error) {
+	salt, err := RandomSecret(16)
+	if err != nil {
+		log.Fatal(err)
+	}
+	driveKey := DeriveKey(v.MasterPassword, salt)
+
+	// Encrypt the data
+	block, err := aes.NewCipher(driveKey)
 	if err != nil {
 		return "", err
 	}
@@ -73,28 +81,35 @@ func (v *Vault) EncryptData(data string, key []byte) (string, error) {
 	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
 		return "", err
 	}
-	ciphertext := gcm.Seal(nonce, nonce, []byte(data), nil)
-	return base64.URLEncoding.EncodeToString(ciphertext), nil
+	ciphertext := gcm.Seal(nil, nonce, []byte(data), nil)
+
+	// Combine salt, nonce, and ciphertext for the final encrypted data
+	finalCiphertext := append(salt, nonce...)
+	finalCiphertext = append(finalCiphertext, ciphertext...)
+
+	// Encode the combined slice to base64
+	return base64.URLEncoding.EncodeToString(finalCiphertext), nil
 }
 
-func DecryptPassword(encryptedData string, MasterPassword string) (string, error) {
+func (v *Vault) DecryptPassword(encryptedData string) (string, error) {
 	data, err := base64.URLEncoding.DecodeString(encryptedData)
 	if err != nil {
 		return "", err
 	}
-	saltSize := 16  // For example, 16 bytes salt
-	nonceSize := 12 // For example, 12 bytes nonce (typical for GCM)
 
-	// Validate sizes
-	if len(data) < saltSize+nonceSize { // Minimum length check
-		return "", errors.New("encrypted data is too short")
+	// Validate minimum size
+	saltSize := 16
+	if len(data) < saltSize {
+		return "", errors.New("encrypted data too short to contain salt")
 	}
 
 	salt := data[:saltSize]
-	nonce := data[saltSize : saltSize+nonceSize]
-	ciphertext := data[saltSize+nonceSize:]
+	data = data[saltSize:]
 
-	key := DeriveKey(MasterPassword, salt)
+	// Derive the key
+	key := DeriveKey(v.MasterPassword, salt)
+
+	// Decrypt the data
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
@@ -103,10 +118,15 @@ func DecryptPassword(encryptedData string, MasterPassword string) (string, error
 	if err != nil {
 		return "", err
 	}
+	nonceSize := gcm.NonceSize()
+	if len(data) < nonceSize {
+		return "", errors.New("encrypted data too short to contain nonce")
+	}
 
+	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to decrypt: %v", err)
 	}
 	return string(plaintext), nil
 }

@@ -111,7 +111,7 @@ func Run(cmd *cobra.Command, args []string) {
 			return
 		}
 
-		fmt.Println("Password:", password.ReadPassword(MasterPassword))
+		fmt.Println("Password:", appContext.Vault.ReadPassword(&password))
 	}
 	if delFlag {
 		fmt.Println("Deleting password")

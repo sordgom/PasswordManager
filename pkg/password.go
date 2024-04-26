@@ -27,12 +27,7 @@ func (p *Password) MarshalBinary() ([]byte, error) {
 func (v *Vault) NewPassword(name, url, username, password, hint string) Password {
 	id := uuid.New()
 
-	salt, err := RandomSecret(16)
-	if err != nil {
-		log.Fatal(err)
-	}
-	driveKey := DeriveKey(v.MasterPassword, salt)
-	hash, err := v.EncryptData(password, driveKey)
+	hash, err := v.EncryptPassword(password)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -72,12 +67,8 @@ func (v *Vault) UpdatePassword(name, MasterPassword, password string) error {
 	}
 	for i, passwordVar := range v.Passwords {
 		if passwordVar.Name == name {
-			salt, err := RandomSecret(16)
-			if err != nil {
-				log.Fatal(err)
-			}
-			driveKey := DeriveKey(MasterPassword, salt)
-			hash, err := v.EncryptData(password, driveKey)
+
+			hash, err := v.EncryptPassword(password)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -105,8 +96,8 @@ func (vault *Vault) AppendPassword(password Password) {
 	vault.Passwords = append(vault.Passwords, password)
 }
 
-func (p *Password) ReadPassword(MasterPassword string) string {
-	password, err := DecryptPassword(p.Hash, MasterPassword)
+func (v *Vault) ReadPassword(p *Password) string {
+	password, err := v.DecryptPassword(p.Hash)
 	if err != nil {
 		log.Fatal(err)
 	}
