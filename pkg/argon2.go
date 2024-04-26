@@ -13,6 +13,23 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
+func Compare(password, hash string) bool {
+	match, err := argon2id.ComparePasswordAndHash(password, hash)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return match
+}
+func GenerateHash(password string) string {
+	hash, err := argon2id.CreateHash(password, argon2id.DefaultParams)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return hash
+}
+
 func GenerateRandomHash() string {
 	secret, err := RandomSecret(32)
 	if err != nil {
@@ -39,8 +56,8 @@ func RandomSecret(length uint32) ([]byte, error) {
 }
 
 // Derive a key from the master password
-func DeriveKey(masterPassword string, salt []byte) []byte {
-	return argon2.IDKey([]byte(masterPassword), salt, 1, 64*1024, 4, 32) // Returns a 32-byte key
+func DeriveKey(MasterPassword string, salt []byte) []byte {
+	return argon2.IDKey([]byte(MasterPassword), salt, 1, 64*1024, 4, 32) // Returns a 32-byte key
 }
 
 func (v *Vault) EncryptData(data string, key []byte) (string, error) {
@@ -60,7 +77,7 @@ func (v *Vault) EncryptData(data string, key []byte) (string, error) {
 	return base64.URLEncoding.EncodeToString(ciphertext), nil
 }
 
-func DecryptPassword(encryptedData string, masterPassword string) (string, error) {
+func DecryptPassword(encryptedData string, MasterPassword string) (string, error) {
 	data, err := base64.URLEncoding.DecodeString(encryptedData)
 	if err != nil {
 		return "", err
@@ -77,7 +94,7 @@ func DecryptPassword(encryptedData string, masterPassword string) (string, error
 	nonce := data[saltSize : saltSize+nonceSize]
 	ciphertext := data[saltSize+nonceSize:]
 
-	key := DeriveKey(masterPassword, salt)
+	key := DeriveKey(MasterPassword, salt)
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err

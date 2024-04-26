@@ -14,8 +14,8 @@ type Password struct {
 	Name string
 	Url  string
 
-	username string
-	hash     string
+	Username string
+	Hash     string
 
 	Hint string
 }
@@ -31,7 +31,7 @@ func (v *Vault) NewPassword(name, url, username, password, hint string) Password
 	if err != nil {
 		log.Fatal(err)
 	}
-	driveKey := DeriveKey(v.masterPassword, salt)
+	driveKey := DeriveKey(v.MasterPassword, salt)
 	hash, err := v.EncryptData(password, driveKey)
 	if err != nil {
 		log.Fatal(err)
@@ -41,14 +41,14 @@ func (v *Vault) NewPassword(name, url, username, password, hint string) Password
 		Id:       id,
 		Name:     name,
 		Url:      url,
-		username: username,
-		hash:     hash,
+		Username: username,
+		Hash:     hash,
 		Hint:     hint,
 	}
 }
 
 func (v *Vault) GetPassword(name string) (Password, error) {
-	for _, password := range v.passwords {
+	for _, password := range v.Passwords {
 		if password.Name == name {
 			return password, nil
 		}
@@ -59,31 +59,31 @@ func (v *Vault) GetPassword(name string) (Password, error) {
 func (v *Vault) GetPasswords() [][]string {
 	// Return a list of password names and hints
 	var result [][]string
-	for _, password := range v.passwords {
+	for _, password := range v.Passwords {
 		result = append(result, []string{password.Name, password.Hint})
 	}
 	return result
 }
 
-func (v *Vault) UpdatePassword(name, masterPassword, password string) error {
-	if v.masterPassword != masterPassword {
+func (v *Vault) UpdatePassword(name, MasterPassword, password string) error {
+	if v.MasterPassword != MasterPassword {
 		fmt.Println("incorrect master password")
 		return errors.New("incorrect master password")
 	}
-	for i, passwordVar := range v.passwords {
+	for i, passwordVar := range v.Passwords {
 		if passwordVar.Name == name {
 			salt, err := RandomSecret(16)
 			if err != nil {
 				log.Fatal(err)
 			}
-			driveKey := DeriveKey(masterPassword, salt)
+			driveKey := DeriveKey(MasterPassword, salt)
 			hash, err := v.EncryptData(password, driveKey)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			v.passwords[i].Name = name
-			v.passwords[i].hash = hash
+			v.Passwords[i].Name = name
+			v.Passwords[i].Hash = hash
 
 			return nil
 		}
@@ -92,9 +92,9 @@ func (v *Vault) UpdatePassword(name, masterPassword, password string) error {
 }
 
 func (v *Vault) DeletePassword(id uuid.UUID) error {
-	for i, password := range v.passwords {
+	for i, password := range v.Passwords {
 		if password.Id == id {
-			v.passwords = append(v.passwords[:i], v.passwords[i+1:]...)
+			v.Passwords = append(v.Passwords[:i], v.Passwords[i+1:]...)
 			return nil
 		}
 	}
@@ -102,11 +102,11 @@ func (v *Vault) DeletePassword(id uuid.UUID) error {
 }
 
 func (vault *Vault) AppendPassword(password Password) {
-	vault.passwords = append(vault.passwords, password)
+	vault.Passwords = append(vault.Passwords, password)
 }
 
-func (p *Password) ReadPassword(masterPassword string) string {
-	password, err := DecryptPassword(p.hash, masterPassword)
+func (p *Password) ReadPassword(MasterPassword string) string {
+	password, err := DecryptPassword(p.Hash, MasterPassword)
 	if err != nil {
 		log.Fatal(err)
 	}

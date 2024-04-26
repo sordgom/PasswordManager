@@ -33,7 +33,7 @@ var vaultCmd = &cobra.Command{
 		if shouldGenerate {
 			hashedPassword = pkg.GenerateRandomHash()
 		} else {
-			hashedPassword = args[0]
+			hashedPassword = pkg.GenerateHash(args[0])
 		}
 
 		vault := pkg.New(vaultFlag, hashedPassword)

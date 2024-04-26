@@ -10,21 +10,21 @@ import (
 
 type Vault struct {
 	Name           string
-	masterPassword string
+	MasterPassword string
 
-	passwords []Password
+	Passwords []Password
 }
 
 func New(name, masterPassword string) Vault {
 	return Vault{
 		Name:           name,
-		masterPassword: masterPassword,
+		MasterPassword: masterPassword,
 	}
 }
 
 func (v *Vault) VerifyMasterPassword(newPassword string) bool {
-	fmt.Print("MP", v.masterPassword)
-	return v.masterPassword == newPassword
+	//logger
+	return Compare(newPassword, v.MasterPassword)
 }
 
 func SaveVaultToRedis(client *redis.Client, vault *Vault) error {

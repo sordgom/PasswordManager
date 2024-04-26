@@ -101,16 +101,17 @@ func Run(cmd *cobra.Command, args []string) {
 
 		// Ask user to input master password
 		fmt.Print("Enter master password: ")
-		masterPassword, err := readPasswordFromStdin()
+		MasterPassword, err := readPasswordFromStdin()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to read password: %v\n", err)
 			os.Exit(1)
 		}
-		if !appContext.Vault.VerifyMasterPassword(masterPassword) {
-			fmt.Println("Master password is incorrect")
+		if !appContext.Vault.VerifyMasterPassword(MasterPassword) {
+			fmt.Println("Master password is incorrect", MasterPassword)
 			return
 		}
-		fmt.Println("Password:", password.ReadPassword(masterPassword))
+
+		fmt.Println("Password:", password.ReadPassword(MasterPassword))
 	}
 	if delFlag {
 		fmt.Println("Deleting password")
