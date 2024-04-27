@@ -1,13 +1,14 @@
-package pkg
+package test
 
 import (
+	"password-manager/pkg"
 	"testing"
 
 	"gotest.tools/v3/assert"
 )
 
 func TestPasswordEncryption(t *testing.T) {
-	v := Vault{
+	v := pkg.Vault{
 		Name:           "test",
 		MasterPassword: "test",
 	}
@@ -17,7 +18,7 @@ func TestPasswordEncryption(t *testing.T) {
 }
 
 func TestPasswordDecryption(t *testing.T) {
-	v := Vault{
+	v := pkg.Vault{
 		Name:           "test",
 		MasterPassword: "test",
 	}
