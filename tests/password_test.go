@@ -37,6 +37,17 @@ func TestUpdatingPassword(t *testing.T) {
 	err := vault.UpdatePassword("Facebook", "newpassword", "newpassword")
 	assert.NilError(t, err, "Password should be updated")
 
-	passwordMatch, err := vault.VerifyPassword("Facebook", "newpassword")
+	passwordMatch, _ := vault.VerifyPassword("Facebook", "newpassword")
 	assert.Assert(t, passwordMatch, "Password was not updated")
+}
+
+func TestDeletingPassword(t *testing.T) {
+	vault := TestVault()
+	vault.NewPassword("Facebook", "https://facebook.com", "username", "password", "basic")
+
+	err := vault.DeletePassword("Facebook")
+	assert.NilError(t, err, "Password should be deleted")
+
+	_, err = vault.GetPassword("Facebook")
+	assert.Error(t, err, "Password not found")
 }

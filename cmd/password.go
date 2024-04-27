@@ -141,6 +141,29 @@ func Run(cmd *cobra.Command, args []string) {
 	}
 	if delFlag {
 		fmt.Println("Deleting password")
+		if len(args) != 1 {
+			log.Fatal("Please provide the password name")
+			return
+		}
+
+		// Ask user to input master password
+		fmt.Print("Enter master password: ")
+		MasterPassword, err := readPasswordFromStdin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to read password: %v\n", err)
+			os.Exit(1)
+		}
+		if !appContext.Vault.VerifyMasterPassword(MasterPassword) {
+			fmt.Println("Master password is incorrect", MasterPassword)
+			return
+		}
+
+		err = appContext.Vault.DeletePassword(args[0])
+		if err != nil {
+			log.Fatalf("\nFailed to delete password: %s", args[0])
+		}
+		fmt.Println("Password was deleted successfully")
+
 	}
 }
 

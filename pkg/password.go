@@ -83,9 +83,9 @@ func (v *Vault) UpdatePassword(name, newPassword, confirmPassword string) error 
 	return errors.New("Password not found")
 }
 
-func (v *Vault) DeletePassword(id uuid.UUID) error {
+func (v *Vault) DeletePassword(name string) error {
 	for i, password := range v.Passwords {
-		if password.Id == id {
+		if password.Name == name {
 			v.Passwords = append(v.Passwords[:i], v.Passwords[i+1:]...)
 			return nil
 		}
