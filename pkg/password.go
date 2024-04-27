@@ -60,20 +60,21 @@ func (v *Vault) GetPasswords() [][]string {
 	return result
 }
 
-func (v *Vault) UpdatePassword(name, MasterPassword, password string) error {
-	if v.MasterPassword != MasterPassword {
-		fmt.Println("incorrect master password")
-		return errors.New("incorrect master password")
+func (v *Vault) UpdatePassword(name, newPassword, confirmPassword string) error {
+
+	if newPassword != confirmPassword {
+		fmt.Println("Passwords do not match")
+		return errors.New("passwords do not match")
 	}
+
 	for i, passwordVar := range v.Passwords {
 		if passwordVar.Name == name {
 
-			hash, err := v.EncryptPassword(password)
+			hash, err := v.EncryptPassword(newPassword)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			v.Passwords[i].Name = name
 			v.Passwords[i].Hash = hash
 
 			return nil
@@ -98,4 +99,14 @@ func (v *Vault) ReadPassword(p *Password) string {
 		log.Fatal(err)
 	}
 	return password
+}
+
+func (v *Vault) VerifyPassword(name, password string) (bool, error) {
+	for _, passwordVar := range v.Passwords {
+		if passwordVar.Name == name {
+			decryptedPassword, _ := v.DecryptPassword(passwordVar.Hash)
+			return password == decryptedPassword, nil
+		}
+	}
+	return false, errors.New("Password not found")
 }

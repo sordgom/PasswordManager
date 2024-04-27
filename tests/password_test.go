@@ -29,3 +29,14 @@ func TestReadingPassword(t *testing.T) {
 	passwordString := vault.ReadPassword(&password)
 	assert.Assert(t, passwordString == "password", "Password was read incorrectly")
 }
+
+func TestUpdatingPassword(t *testing.T) {
+	vault := TestVault()
+	vault.NewPassword("Facebook", "https://facebook.com", "username", "password", "basic")
+
+	err := vault.UpdatePassword("Facebook", "newpassword", "newpassword")
+	assert.NilError(t, err, "Password should be updated")
+
+	passwordMatch, err := vault.VerifyPassword("Facebook", "newpassword")
+	assert.Assert(t, passwordMatch, "Password was not updated")
+}

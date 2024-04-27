@@ -69,12 +69,38 @@ func Run(cmd *cobra.Command, args []string) {
 	}
 	if modifyFlag {
 		fmt.Println("Updating password")
-		if len(args) != 3 {
-			log.Fatal("Please provide the password name, master password and new password")
+		if len(args) != 1 {
+			log.Fatal("Please provide the password name")
 			return
 		}
 
-		err := appContext.Vault.UpdatePassword(args[0], args[1], args[2])
+		// Ask user to input master password
+		fmt.Print("Enter master password: ")
+		MasterPassword, err := readPasswordFromStdin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to read password: %v\n", err)
+			os.Exit(1)
+		}
+		if !appContext.Vault.VerifyMasterPassword(MasterPassword) {
+			fmt.Println("Master password is incorrect", MasterPassword)
+			return
+		}
+
+		// Ask user to input new password and to confirm it
+		fmt.Print("Enter new password: ")
+		NewPassword, err := readPasswordFromStdin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to read new password: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Print("Confirm new password: ")
+		ConfirmNewPassword, err := readPasswordFromStdin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to read confirm password: %v\n", err)
+			os.Exit(1)
+		}
+
+		err = appContext.Vault.UpdatePassword(args[0], NewPassword, ConfirmNewPassword)
 		if err != nil {
 			log.Fatalf("\nFailed to update password: %s", args[0])
 		}
