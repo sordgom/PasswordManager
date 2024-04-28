@@ -24,7 +24,12 @@ func (server *Server) createVault(ctx *gin.Context) {
 		Name:           req.Name,
 		MasterPassword: req.MasterPassword,
 	}
-	server.VaultService.SaveVaultToRedis(&vault)
+
+	// Save the vault using the service
+	if err := server.VaultService.SaveVaultToRedis(ctx, &vault); err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
 
 	ctx.JSON(http.StatusCreated, gin.H{
 		"message": "Vault created successfully",

@@ -7,23 +7,21 @@ import (
 	"testing"
 
 	"github.com/sordgom/PasswordManager/server/config"
-	"github.com/sordgom/PasswordManager/server/mocks"
 	"github.com/sordgom/PasswordManager/server/model"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 )
 
 type MockAppContext struct {
 }
 
-func newTestServer(t *testing.T) *Server {
+func newTestServer(t *testing.T, vaultService config.VaultService) *Server {
 	config := config.Config{
 		RedisAddress: "localhost:6379",
 	}
 
-	server, err := NewServer(config)
+	server, err := NewServer(config, vaultService)
 	require.NoError(t, err)
 
 	return server
@@ -63,20 +61,4 @@ func RandomString(n int) string {
 	}
 
 	return sb.String()
-}
-
-func TestSaveVaultToRedis(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockVaultService := mocks.NewMockVaultService(ctrl)
-	vault := &model.Vault{Name: "example", MasterPassword: "example"}
-
-	// Set expectation
-	var mockErr error
-	mockVaultService.EXPECT().SaveVaultToRedis(vault).Return(mockErr).Times(1)
-
-	// Test the function that uses the service
-	err := mockVaultService.SaveVaultToRedis(vault)
-	require.NoError(t, err)
 }

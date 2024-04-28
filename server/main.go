@@ -3,6 +3,8 @@ package main
 import (
 	"os"
 
+	"github.com/redis/go-redis/v9"
+	"github.com/sordgom/PasswordManager/server/api"
 	"github.com/sordgom/PasswordManager/server/config"
 
 	"github.com/rs/zerolog"
@@ -22,6 +24,21 @@ func main() {
 	runServer(config)
 }
 
-func runServer(config config.Config) {
-	log.Info().Str("address", config.ServerAddress).Msg("starting server")
+func runServer(configuration config.Config) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     configuration.RedisAddress,
+		Password: "", // no password set
+		DB:       0,  // default db
+	})
+
+	vaultService := config.NewRedisVaultService(client)
+
+	server, err := api.NewServer(configuration, vaultService)
+	if err != nil {
+		log.Fatal().Err(err).Msg("cannot create server")
+	}
+	err = server.Start(configuration.HTTPServerAddress)
+	if err != nil {
+		log.Fatal().Err(err).Msg("cannot start server")
+	}
 }

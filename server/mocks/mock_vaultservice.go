@@ -10,6 +10,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	model "github.com/sordgom/PasswordManager/server/model"
@@ -40,30 +41,30 @@ func (m *MockVaultService) EXPECT() *MockVaultServiceMockRecorder {
 }
 
 // LoadVaultFromRedis mocks base method.
-func (m *MockVaultService) LoadVaultFromRedis(arg0 string) (*model.Vault, error) {
+func (m *MockVaultService) LoadVaultFromRedis(arg0 context.Context, arg1 string) (*model.Vault, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadVaultFromRedis", arg0)
+	ret := m.ctrl.Call(m, "LoadVaultFromRedis", arg0, arg1)
 	ret0, _ := ret[0].(*model.Vault)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // LoadVaultFromRedis indicates an expected call of LoadVaultFromRedis.
-func (mr *MockVaultServiceMockRecorder) LoadVaultFromRedis(arg0 any) *gomock.Call {
+func (mr *MockVaultServiceMockRecorder) LoadVaultFromRedis(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadVaultFromRedis", reflect.TypeOf((*MockVaultService)(nil).LoadVaultFromRedis), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadVaultFromRedis", reflect.TypeOf((*MockVaultService)(nil).LoadVaultFromRedis), arg0, arg1)
 }
 
 // SaveVaultToRedis mocks base method.
-func (m *MockVaultService) SaveVaultToRedis(arg0 *model.Vault) error {
+func (m *MockVaultService) SaveVaultToRedis(arg0 context.Context, arg1 *model.Vault) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveVaultToRedis", arg0)
+	ret := m.ctrl.Call(m, "SaveVaultToRedis", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SaveVaultToRedis indicates an expected call of SaveVaultToRedis.
-func (mr *MockVaultServiceMockRecorder) SaveVaultToRedis(arg0 any) *gomock.Call {
+func (mr *MockVaultServiceMockRecorder) SaveVaultToRedis(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveVaultToRedis", reflect.TypeOf((*MockVaultService)(nil).SaveVaultToRedis), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveVaultToRedis", reflect.TypeOf((*MockVaultService)(nil).SaveVaultToRedis), arg0, arg1)
 }
