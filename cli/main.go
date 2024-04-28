@@ -4,7 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package main
 
 import (
-	"password-manager/cmd"
+	"github.com/sordgom/PasswordManager/cli/cmd"
 )
 
 func main() {

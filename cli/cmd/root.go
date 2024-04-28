@@ -6,7 +6,8 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"password-manager/pkg"
+
+	"github.com/sordgom/PasswordManager/cli/pkg"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cobra"

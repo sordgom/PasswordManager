@@ -1,8 +1,9 @@
 package test
 
 import (
-	"password-manager/pkg"
 	"testing"
+
+	"github.com/sordgom/PasswordManager/cli/pkg"
 
 	"gotest.tools/v3/assert"
 )

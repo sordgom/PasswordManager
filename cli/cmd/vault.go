@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 
-	"password-manager/pkg"
+	"github.com/sordgom/PasswordManager/cli/pkg"
 
 	"github.com/spf13/cobra"
 )

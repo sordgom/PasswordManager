@@ -1,6 +1,6 @@
 package test
 
-import "password-manager/pkg"
+import "github.com/sordgom/PasswordManager/cli/pkg"
 
 func TestVault() *pkg.Vault {
 	v := pkg.Vault{

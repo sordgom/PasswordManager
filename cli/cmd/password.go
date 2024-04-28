@@ -8,7 +8,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"password-manager/pkg"
+
+	"github.com/sordgom/PasswordManager/cli/pkg"
 
 	"github.com/fatih/color"
 	"github.com/rodaine/table"
@@ -44,7 +45,7 @@ func Run(cmd *cobra.Command, args []string) {
 			log.Fatal("Please provide the name, url, username, password and hint for the password")
 			return
 		}
-
+		// I need to check if I have a vault
 		appContext.Vault.NewPassword(args[0], args[1], args[2], args[3], args[4])
 
 		err := pkg.SaveVaultToRedis(appContext.Client, appContext.Vault)
