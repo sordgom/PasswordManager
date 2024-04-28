@@ -1,9 +1,6 @@
 package config
 
 import (
-	"server/model"
-
-	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 )
 
@@ -14,11 +11,6 @@ type Config struct {
 	RedisAddress      string `mapstructure:"REDIS_ADDRESS"`
 	HTTPServerAddress string `mapstructure:"HTTP_SERVER_ADDRESS"`
 	TokenSymmetricKey string `mapstructure:"TOKEN_SYMMETRIC_KEY"`
-}
-
-type AppContext struct {
-	Client *redis.Client
-	Vault  *model.Vault
 }
 
 func LoadConfig(path string) (config Config, err error) {

@@ -2,7 +2,8 @@ package main
 
 import (
 	"os"
-	"server/config"
+
+	"github.com/sordgom/PasswordManager/server/config"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"

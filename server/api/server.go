@@ -1,23 +1,33 @@
 package api
 
 import (
-	"server/config"
+	"github.com/sordgom/PasswordManager/server/config"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 type Server struct {
-	config config.Config
-	router *gin.Engine
+	config       config.Config
+	router       *gin.Engine
+	VaultService *config.RedisVaultService
 }
 
-func NewServer(config config.Config) (*Server, error) {
+func NewServer(conf config.Config) (*Server, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     conf.RedisAddress,
+		Password: "", // no password set
+		DB:       0,  // default db
+	})
+
+	vaultService := config.NewRedisVaultService(client)
+
 	server := &Server{
-		config: config,
+		config:       conf,
+		VaultService: vaultService,
 	}
 
 	server.setupRouter()
-
 	return server, nil
 }
 
@@ -25,10 +35,10 @@ func (server *Server) setupRouter() {
 	router := gin.Default()
 
 	// Vault API
-	server.router.GET("/vault", server.createVault)
+	router.POST("/vault", server.createVault)
 
 	// Password API
-	server.router.GET("/password", server.createPassword)
+	router.POST("/password", server.createPassword)
 
 	server.router = router
 }

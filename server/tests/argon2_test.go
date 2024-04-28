@@ -1,8 +1,9 @@
 package test
 
 import (
-	"server/model"
 	"testing"
+
+	"github.com/sordgom/PasswordManager/server/model"
 
 	"gotest.tools/v3/assert"
 )
