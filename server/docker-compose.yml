@@ -9,6 +9,22 @@ services:
       - REDIS_DATABASES=16
     ports:
       - "6379:6379"
+  
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: api:1.0
+    restart: always
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=changeme
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    command: [ "/app/main" ]
 
 volumes:
   data-volume:
