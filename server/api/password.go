@@ -4,13 +4,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sordgom/PasswordManager/server/model"
 )
 
 type createPasswordRequest struct {
-	Name     string `json:"name"`
+	Name     string `json:"name" binding:"required"`
 	Url      string `json:"url"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
 	Hint     string `json:"hint"`
 }
 
@@ -20,7 +21,7 @@ type createPasswordVaultName struct {
 
 func (server *Server) createPassword(ctx *gin.Context) {
 	var req createPasswordRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
@@ -30,7 +31,6 @@ func (server *Server) createPassword(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-
 	// Load the vault from redis or check if it exists
 	vault, err := server.VaultService.LoadVaultFromRedis(ctx, params.Name)
 	if err != nil {
@@ -48,6 +48,25 @@ func (server *Server) createPassword(ctx *gin.Context) {
 	})
 }
 
+type getPasswordsResponse struct {
+	Name string `json:"name"`
+	Hint string `json:"hint"`
+}
+
+// Convert the password struct to getPasswordsResponse struct
+// Return the list of passwords in the vault
+func ToPasswordsResponse(passwords []model.Password) []getPasswordsResponse {
+	var result []getPasswordsResponse
+	for _, password := range passwords {
+		newPassword := getPasswordsResponse{
+			Name: password.Name,
+			Hint: password.Hint,
+		}
+		result = append(result, newPassword)
+	}
+	return result
+}
+
 func (server *Server) getPasswords(ctx *gin.Context) {
 	var params createPasswordVaultName
 	if err := ctx.ShouldBindQuery(&params); err != nil {
@@ -63,12 +82,20 @@ func (server *Server) getPasswords(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, vault.Passwords)
+	passwords := ToPasswordsResponse(vault.Passwords)
+
+	ctx.JSON(http.StatusOK, passwords)
 }
 
 type getPasswordRequest struct {
 	VaultName    string `form:"vault_name" binding:"required"`
 	PasswordName string `form:"password_name" binding:"required"`
+}
+
+type getPasswordResponse struct {
+	Name     string `json:"name"`
+	Hint     string `json:"hint"`
+	Password string `json:"password"`
 }
 
 func (server *Server) getPassword(ctx *gin.Context) {
@@ -101,5 +128,11 @@ func (server *Server) getPassword(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, password)
+	passwordResponse := getPasswordResponse{
+		Name:     password.Name,
+		Hint:     password.Hint,
+		Password: vault.ReadPassword(&password),
+	}
+
+	ctx.JSON(http.StatusOK, passwordResponse)
 }

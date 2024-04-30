@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/sordgom/PasswordManager/server/mocks"
-	"github.com/sordgom/PasswordManager/server/model"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -87,6 +86,8 @@ func TestGetPasswords(t *testing.T) {
 	RandomPassword(vault)
 	RandomPassword(vault)
 
+	passwordsResponse := ToPasswordsResponse(vault.Passwords)
+
 	testCases := []struct {
 		name          string
 		vaultName     string
@@ -101,7 +102,7 @@ func TestGetPasswords(t *testing.T) {
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchPasswords(t, recorder.Body, vault.Passwords)
+				requireBodyMatchPasswords(t, recorder.Body, passwordsResponse)
 			},
 		},
 	}
@@ -132,7 +133,11 @@ func TestGetPassword(t *testing.T) {
 	// Generate a new vault with 2 random passwords
 	vault := randomVault()
 	password := vault.NewPassword("name1", "url1", "username1", "password1", "hint1")
-
+	passwordsResponse := getPasswordResponse{
+		Name:     password.Name,
+		Hint:     password.Hint,
+		Password: vault.ReadPassword(&password),
+	}
 	testCases := []struct {
 		name          string
 		vaultName     string
@@ -149,7 +154,7 @@ func TestGetPassword(t *testing.T) {
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchPassword(t, recorder.Body, password)
+				requireBodyMatchPassword(t, recorder.Body, passwordsResponse)
 				require.Equal(t, password, vault.Passwords[0])
 			},
 		},
@@ -201,22 +206,22 @@ func TestGetPassword(t *testing.T) {
 	}
 }
 
-func requireBodyMatchPasswords(t *testing.T, body *bytes.Buffer, passwords []model.Password) {
+func requireBodyMatchPasswords(t *testing.T, body *bytes.Buffer, responsePasswords []getPasswordsResponse) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotPasswords []model.Password
+	var gotPasswords []getPasswordsResponse
 	err = json.Unmarshal(data, &gotPasswords)
 	require.NoError(t, err)
-	require.Equal(t, passwords, gotPasswords)
+	require.Equal(t, responsePasswords, gotPasswords)
 }
 
-func requireBodyMatchPassword(t *testing.T, body *bytes.Buffer, password model.Password) {
+func requireBodyMatchPassword(t *testing.T, body *bytes.Buffer, responsePassword getPasswordResponse) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotPassword model.Password
+	var gotPassword getPasswordResponse
 	err = json.Unmarshal(data, &gotPassword)
 	require.NoError(t, err)
-	require.Equal(t, password, gotPassword)
+	require.Equal(t, responsePassword, gotPassword)
 }

@@ -1,6 +1,8 @@
 package api
 
 import (
+	"github.com/gin-contrib/cors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sordgom/PasswordManager/server/config"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +27,10 @@ func NewServer(conf config.Config, vaultService config.VaultService) (*Server, e
 
 func (server *Server) setupRouter() {
 	router := gin.Default()
+
+	router.Handle("GET", "/metrics", gin.WrapH(promhttp.Handler()))
+
+	router.Use(cors.Default())
 
 	// Vault API
 	router.POST("/vault", server.createVault)

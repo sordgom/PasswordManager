@@ -27,8 +27,8 @@ func main() {
 func runServer(configuration config.Config) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     configuration.RedisAddress,
-		Password: "", // no password set
-		DB:       0,  // default db
+		Password: "changeme",
+		DB:       0, // default db
 	})
 
 	vaultService := config.NewRedisVaultService(client)

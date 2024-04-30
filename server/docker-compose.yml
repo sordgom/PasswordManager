@@ -1,4 +1,5 @@
-version: "1.0"
+version: "3.8"
+
 services:
   redis:
     image: redis:7-alpine
@@ -7,6 +8,8 @@ services:
       - REDIS_PASSWORD=changeme
       - REDIS_PORT=6379
       - REDIS_DATABASES=16
+    networks:
+      - password-manager-network
     ports:
       - "6379:6379"
   
@@ -25,6 +28,12 @@ services:
     depends_on:
       - redis
     command: [ "/app/main" ]
+    networks:
+      - password-manager-network
 
+networks:
+  password-manager-network:
+    driver: bridge
+    
 volumes:
   data-volume:
