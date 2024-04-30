@@ -12,6 +12,7 @@ import (
 type VaultService interface {
 	SaveVaultToRedis(ctx context.Context, vault *model.Vault) error
 	LoadVaultFromRedis(ctx context.Context, vaultName string) (*model.Vault, error)
+	VerifyMasterPassword(ctx context.Context, vaultName, masterPassword string) bool
 }
 
 type RedisVaultService struct {
@@ -43,4 +44,13 @@ func (r *RedisVaultService) LoadVaultFromRedis(ctx context.Context, vaultName st
 	}
 
 	return &vault, nil
+}
+
+func (r *RedisVaultService) VerifyMasterPassword(ctx context.Context, vaultName, masterPassword string) bool {
+	vault, err := r.LoadVaultFromRedis(ctx, vaultName)
+	if err != nil {
+		return false
+	}
+
+	return vault.VerifyMasterPassword(masterPassword)
 }

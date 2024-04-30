@@ -31,7 +31,8 @@ func (server *Server) setupRouter() {
 
 	// Password API
 	router.POST("/password", server.createPassword)
-	router.GET("/password", server.getPasswords)
+	router.GET("/passwords", server.getPasswords)
+	router.GET("/password", server.getPassword)
 
 	server.router = router
 }

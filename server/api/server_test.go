@@ -13,9 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type MockAppContext struct {
-}
-
 func newTestServer(t *testing.T, vaultService config.VaultService) *Server {
 	config := config.Config{
 		RedisAddress: "localhost:6379",

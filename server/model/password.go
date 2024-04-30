@@ -24,7 +24,7 @@ func (p *Password) MarshalBinary() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-func (v *Vault) NewPassword(name, url, username, password, hint string) {
+func (v *Vault) NewPassword(name, url, username, password, hint string) Password {
 	id := uuid.New()
 
 	hash, err := v.EncryptPassword(password)
@@ -32,14 +32,17 @@ func (v *Vault) NewPassword(name, url, username, password, hint string) {
 		log.Fatal(err)
 	}
 
-	v.Passwords = append(v.Passwords, Password{
+	newPassword := Password{
 		Id:       id,
 		Name:     name,
 		Url:      url,
 		Username: username,
 		Hash:     hash,
 		Hint:     hint,
-	})
+	}
+
+	v.Passwords = append(v.Passwords, newPassword)
+	return newPassword
 }
 
 func (v *Vault) GetPassword(name string) (Password, error) {

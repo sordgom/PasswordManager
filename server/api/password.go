@@ -65,3 +65,41 @@ func (server *Server) getPasswords(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, vault.Passwords)
 }
+
+type getPasswordRequest struct {
+	VaultName    string `form:"vault_name" binding:"required"`
+	PasswordName string `form:"password_name" binding:"required"`
+}
+
+func (server *Server) getPassword(ctx *gin.Context) {
+	var params getPasswordRequest
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// if !server.VaultService.VerifyMasterPassword(ctx, params.VaultName, params.MasterPassword) {
+	// 	ctx.JSON(http.StatusBadRequest, gin.H{
+	// 		"error": "Invalid master password",
+	// 	})
+	// 	return
+	// }
+
+	vault, err := server.VaultService.LoadVaultFromRedis(ctx, params.VaultName)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Vault not found",
+		})
+		return
+	}
+
+	password, err := vault.GetPassword(params.PasswordName)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Password not found",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, password)
+}

@@ -68,3 +68,17 @@ func (mr *MockVaultServiceMockRecorder) SaveVaultToRedis(arg0, arg1 any) *gomock
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveVaultToRedis", reflect.TypeOf((*MockVaultService)(nil).SaveVaultToRedis), arg0, arg1)
 }
+
+// VerifyMasterPassword mocks base method.
+func (m *MockVaultService) VerifyMasterPassword(arg0 context.Context, arg1, arg2 string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VerifyMasterPassword", arg0, arg1, arg2)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// VerifyMasterPassword indicates an expected call of VerifyMasterPassword.
+func (mr *MockVaultServiceMockRecorder) VerifyMasterPassword(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyMasterPassword", reflect.TypeOf((*MockVaultService)(nil).VerifyMasterPassword), arg0, arg1, arg2)
+}
