@@ -136,3 +136,40 @@ func (server *Server) getPassword(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, passwordResponse)
 }
+
+type getPasswordByUrlRequest struct {
+	VaultName string `form:"vault_name" binding:"required"`
+	Url       string `form:"url"`
+}
+
+func (server *Server) getPasswordByUrl(ctx *gin.Context) {
+	var params getPasswordByUrlRequest
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	vault, err := server.VaultService.LoadVaultFromRedis(ctx, params.VaultName)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Vault not found",
+		})
+		return
+	}
+
+	password, err := vault.GetPasswordByUrl(params.Url)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	passwordResponse := getPasswordResponse{
+		Name:     password.Name,
+		Hint:     password.Hint,
+		Password: vault.ReadPassword(&password),
+	}
+
+	ctx.JSON(http.StatusOK, passwordResponse)
+}

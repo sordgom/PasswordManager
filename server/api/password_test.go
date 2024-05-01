@@ -206,6 +206,103 @@ func TestGetPassword(t *testing.T) {
 	}
 }
 
+func TestGetPasswordByUrl(t *testing.T) {
+	// Generate a new vault with 2 random passwords
+	vault := randomVault()
+	password := vault.NewPassword("name1", "https://google.com", "username1", "password1", "hint1")
+	passwordsResponse := getPasswordResponse{
+		Name:     password.Name,
+		Hint:     password.Hint,
+		Password: vault.ReadPassword(&password),
+	}
+	testCases := []struct {
+		name          string
+		url           string
+		buildStubs    func(mock *mocks.MockVaultService)
+		checkResponse func(t *testing.T, recoder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "normal url",
+			url:  "https://google.com",
+			buildStubs: func(mock *mocks.MockVaultService) {
+				mock.EXPECT().LoadVaultFromRedis(gomock.Any(), gomock.Any()).Times(1).Return(vault, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchPassword(t, recorder.Body, passwordsResponse)
+				require.Equal(t, password, vault.Passwords[0])
+			},
+		},
+		{
+			name: "unsecure url",
+			url:  "http://google.com",
+			buildStubs: func(mock *mocks.MockVaultService) {
+				mock.EXPECT().LoadVaultFromRedis(gomock.Any(), gomock.Any()).Times(1).Return(vault, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchPassword(t, recorder.Body, passwordsResponse)
+				require.Equal(t, password, vault.Passwords[0])
+			},
+		},
+		{
+			name: "url with path",
+			url:  "https://google.com/path",
+			buildStubs: func(mock *mocks.MockVaultService) {
+				mock.EXPECT().LoadVaultFromRedis(gomock.Any(), gomock.Any()).Times(1).Return(vault, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchPassword(t, recorder.Body, passwordsResponse)
+				require.Equal(t, password, vault.Passwords[0])
+			},
+		},
+		{
+			name: "Empty Urls should return an error",
+			url:  "",
+			buildStubs: func(mock *mocks.MockVaultService) {
+				mock.EXPECT().LoadVaultFromRedis(gomock.Any(), gomock.Any()).Times(1).Return(vault, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+				require.Equal(t, `{"error":"url not found"}`, recorder.Body.String())
+			},
+		},
+		{
+			name: "Url not found",
+			url:  "https://facebook.com",
+			buildStubs: func(mock *mocks.MockVaultService) {
+				mock.EXPECT().LoadVaultFromRedis(gomock.Any(), gomock.Any()).Times(1).Return(vault, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+				require.Equal(t, `{"error":"password or Url not found"}`, recorder.Body.String())
+			},
+		},
+	}
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mock := mocks.NewMockVaultService(ctrl)
+			tc.buildStubs(mock)
+
+			server := newTestServer(t, mock)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("/password/url?vault_name=%s&url=%s", vault.Name, tc.url)
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(t, recorder)
+		})
+	}
+}
+
 func requireBodyMatchPasswords(t *testing.T, body *bytes.Buffer, responsePasswords []getPasswordsResponse) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)

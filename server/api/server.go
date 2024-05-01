@@ -39,6 +39,7 @@ func (server *Server) setupRouter() {
 	router.POST("/password", server.createPassword)
 	router.GET("/passwords", server.getPasswords)
 	router.GET("/password", server.getPassword)
+	router.GET("/password/url", server.getPasswordByUrl)
 
 	server.router = router
 }

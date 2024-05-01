@@ -63,6 +63,19 @@ func (v *Vault) GetPasswords() [][]string {
 	return result
 }
 
+func (v *Vault) GetPasswordByUrl(url string) (Password, error) {
+	if url == "" {
+		return Password{}, errors.New("url not found")
+	}
+	for _, password := range v.Passwords {
+		if matchURL(url, password.Url) {
+			fmt.Println(password)
+			return password, nil
+		}
+	}
+	return Password{}, errors.New("password or Url not found")
+}
+
 func (v *Vault) UpdatePassword(name, newPassword, confirmPassword string) error {
 
 	if newPassword != confirmPassword {
