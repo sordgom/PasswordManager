@@ -20,12 +20,13 @@ function AutoLogin() {
         }
     });
 
-    // Find all elements that could potentially be the submit button
-    const submitButtons = document.querySelectorAll('button[type="submit"], input[type="submit"], button[id="submit"]');
+    // I'm Finding all elements that could potentially be the submit button
     // If there's more than one button, it might require specific logic to choose the right one
+    const submitButtons = document.querySelectorAll('button[type="submit"], input[type="submit"], button[id="submit"]');
     for (const button of submitButtons) {
         if (isVisible(button)) {
-            button.click();
+            // Will uncomment this once the logic is sound
+            // button.click();
             console.log("Login form submitted.");
             return;
         }
@@ -36,8 +37,25 @@ function AutoLogin() {
 
 // Fetch credentials and autofill
 function autofillCredentials(usernameInput, passwordInput) {
-    usernameInput.value = 'student';  
-    passwordInput.value = 'Password123';
+    getPassword().then(data => {
+        usernameInput.value = data.name;  
+        passwordInput.value = data.url;
+    });
 }
 
-AutoLogin()
+function getPassword() {
+    return new Promise((resolve, reject) => {
+        // Hardcode vault name and password name for now
+        const vault_name = "test";
+        const password_name = "test";
+        const host = "http://localhost:8080";
+        const url = `${host}/password?vault_name=${vault_name}&password_name=${password_name}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => resolve(data))
+            .catch(error => reject(error));
+    });
+}
+
+AutoLogin();
