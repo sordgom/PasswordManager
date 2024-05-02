@@ -29,11 +29,17 @@ func runServer(configuration config.Config) {
 	context := context.Background()
 
 	redisAddr := ""
-	if configuration.Environment == "development" {
-		redisAddr = configuration.LocalRedisAddress
-	} else {
-		redisAddr = configuration.RedisAddress
+	switch configuration.Environment {
+	case "development":
+		redisAddr = configuration.DevRedisAddress
+	case "production":
+		redisAddr = configuration.ProdRedisAddress
+	case "testing":
+		redisAddr = configuration.TestRedisAddress
+	default:
+		log.Fatal().Msg("unknown environment")
 	}
+
 	client := redis.NewClient(&redis.Options{
 		Addr:     redisAddr,
 		Password: "changeme",

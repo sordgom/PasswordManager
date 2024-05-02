@@ -7,7 +7,7 @@ dockerUp:
 restart:
 	make dockerDown && make dockerUp
 docker-dev:
-	docker-compose -f docker-compose.dev.yml up
+	docker compose -f docker-compose.dev.yml up -d
 docker-test: 
-	docker-compose f docker-compose.test.yml up
+	docker compose f docker-compose.testing.yml up -d 
 .PHONY: mockVault dockerDown dockerUp restart docker-dev docker-test

@@ -11,11 +11,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
+
+	"github.com/rs/zerolog/log"
 )
 
 func newTestServer(t *testing.T, vaultService config.VaultService) *Server {
-	config := config.Config{
-		RedisAddress: "localhost:6379",
+	config, err := config.LoadConfig("../")
+	if err != nil {
+		log.Fatal().Err(err).Msg("cannot load config")
 	}
 
 	server, err := NewServer(config, vaultService)

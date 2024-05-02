@@ -11,7 +11,7 @@ services:
     networks:
       - password-manager-network
     ports:
-      - "6379:6379"
+      - "6380:6379"
   
   api:
     build: .
@@ -20,7 +20,7 @@ services:
     environment:
       - ENVIROMENT=testing
       - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_PORT=6380
       - REDIS_PASSWORD=changeme
     ports:
       - "8080:8080"

@@ -23,12 +23,10 @@ func TestCreateVault(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name           string
-		body           gin.H
-		vaultName      string
-		masterPassword string
-		buildStubs     func(mock *mocks.MockVaultService)
-		checkResponse  func(t *testing.T, recoder *httptest.ResponseRecorder)
+		name          string
+		body          gin.H
+		buildStubs    func(mock *mocks.MockVaultService)
+		checkResponse func(t *testing.T, recoder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "Created",
@@ -36,8 +34,6 @@ func TestCreateVault(t *testing.T) {
 				"name":            name,
 				"master_password": masterPassword,
 			},
-			vaultName:      name,
-			masterPassword: masterPassword,
 			buildStubs: func(mock *mocks.MockVaultService) {
 				mock.EXPECT().LoadVaultFromRedis(gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 				mock.EXPECT().SaveVaultToRedis(gomock.Any(), gomock.Eq(&vault)).Times(1).Return(nil)
@@ -55,8 +51,6 @@ func TestCreateVault(t *testing.T) {
 				"name":            "",
 				"master_password": masterPassword,
 			},
-			vaultName:      name,
-			masterPassword: masterPassword,
 			buildStubs: func(mock *mocks.MockVaultService) {
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
@@ -70,8 +64,6 @@ func TestCreateVault(t *testing.T) {
 				"name":            name,
 				"master_password": "",
 			},
-			vaultName:      name,
-			masterPassword: masterPassword,
 			buildStubs: func(mock *mocks.MockVaultService) {
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {

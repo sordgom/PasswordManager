@@ -95,7 +95,7 @@ func (v *Vault) UpdatePassword(name, newPassword, confirmPassword string) error 
 			return nil
 		}
 	}
-	return errors.New("Password not found")
+	return errors.New("password not found")
 }
 
 func (v *Vault) DeletePassword(name string) error {
