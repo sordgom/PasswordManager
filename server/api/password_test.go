@@ -135,21 +135,25 @@ func TestGetPassword(t *testing.T) {
 	password := vault.NewPassword("name1", "url1", "username1", "password1", "hint1")
 	passwordsResponse := getPasswordResponse{
 		Name:     password.Name,
+		Url:      password.Url,
 		Hint:     password.Hint,
 		Password: vault.ReadPassword(&password),
 	}
 	testCases := []struct {
-		name          string
-		vaultName     string
-		passwordName  string
-		buildStubs    func(mock *mocks.MockVaultService)
-		checkResponse func(t *testing.T, recoder *httptest.ResponseRecorder)
+		name           string
+		vaultName      string
+		passwordName   string
+		masterPassword string
+		buildStubs     func(mock *mocks.MockVaultService)
+		checkResponse  func(t *testing.T, recoder *httptest.ResponseRecorder)
 	}{
 		{
-			name:         "OK",
-			vaultName:    vault.Name,
-			passwordName: "name1",
+			name:           "OK",
+			vaultName:      vault.Name,
+			passwordName:   "name1",
+			masterPassword: vault.MasterPassword,
 			buildStubs: func(mock *mocks.MockVaultService) {
+				mock.EXPECT().VerifyMasterPassword(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true)
 				mock.EXPECT().LoadVaultFromRedis(gomock.Any(), gomock.Any()).Times(1).Return(vault, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
@@ -159,10 +163,12 @@ func TestGetPassword(t *testing.T) {
 			},
 		},
 		{
-			name:         "Password Name Not Found",
-			vaultName:    vault.Name,
-			passwordName: "name2",
+			name:           "Password Name Not Found",
+			vaultName:      vault.Name,
+			passwordName:   "name2",
+			masterPassword: vault.MasterPassword,
 			buildStubs: func(mock *mocks.MockVaultService) {
+				mock.EXPECT().VerifyMasterPassword(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true)
 				mock.EXPECT().LoadVaultFromRedis(gomock.Any(), gomock.Any()).Times(1).Return(vault, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
@@ -171,10 +177,12 @@ func TestGetPassword(t *testing.T) {
 			},
 		},
 		{
-			name:         "Vault Not Found",
-			vaultName:    "vault2",
-			passwordName: "name1",
+			name:           "Vault Not Found",
+			vaultName:      "vault2",
+			passwordName:   "name1",
+			masterPassword: vault.MasterPassword,
 			buildStubs: func(mock *mocks.MockVaultService) {
+				mock.EXPECT().VerifyMasterPassword(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true)
 				mock.EXPECT().LoadVaultFromRedis(gomock.Any(), gomock.Any()).Times(1).Return(nil, fmt.Errorf("Vault not found"))
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
@@ -196,7 +204,7 @@ func TestGetPassword(t *testing.T) {
 			server := newTestServer(t, mock)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/password?vault_name=%s&password_name=%s", tc.vaultName, tc.passwordName)
+			url := fmt.Sprintf("/password?vault_name=%s&password_name=%s&master_password=%s", tc.vaultName, tc.passwordName, tc.masterPassword)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 

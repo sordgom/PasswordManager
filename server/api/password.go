@@ -50,6 +50,7 @@ func (server *Server) createPassword(ctx *gin.Context) {
 
 type getPasswordsResponse struct {
 	Name string `json:"name"`
+	Url  string `json:"url"`
 	Hint string `json:"hint"`
 }
 
@@ -60,6 +61,7 @@ func ToPasswordsResponse(passwords []model.Password) []getPasswordsResponse {
 	for _, password := range passwords {
 		newPassword := getPasswordsResponse{
 			Name: password.Name,
+			Url:  password.Url,
 			Hint: password.Hint,
 		}
 		result = append(result, newPassword)
@@ -88,12 +90,14 @@ func (server *Server) getPasswords(ctx *gin.Context) {
 }
 
 type getPasswordRequest struct {
-	VaultName    string `form:"vault_name" binding:"required"`
-	PasswordName string `form:"password_name" binding:"required"`
+	VaultName      string `form:"vault_name" binding:"required"`
+	PasswordName   string `form:"password_name" binding:"required"`
+	MasterPassword string `form:"master_password" binding:"required"`
 }
 
 type getPasswordResponse struct {
 	Name     string `json:"name"`
+	Url      string `json:"url"`
 	Hint     string `json:"hint"`
 	Password string `json:"password"`
 }
@@ -105,12 +109,12 @@ func (server *Server) getPassword(ctx *gin.Context) {
 		return
 	}
 
-	// if !server.VaultService.VerifyMasterPassword(ctx, params.VaultName, params.MasterPassword) {
-	// 	ctx.JSON(http.StatusBadRequest, gin.H{
-	// 		"error": "Invalid master password",
-	// 	})
-	// 	return
-	// }
+	if !server.VaultService.VerifyMasterPassword(ctx, params.VaultName, params.MasterPassword) {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid master password",
+		})
+		return
+	}
 
 	vault, err := server.VaultService.LoadVaultFromRedis(ctx, params.VaultName)
 	if err != nil {
@@ -130,6 +134,7 @@ func (server *Server) getPassword(ctx *gin.Context) {
 
 	passwordResponse := getPasswordResponse{
 		Name:     password.Name,
+		Url:      password.Url,
 		Hint:     password.Hint,
 		Password: vault.ReadPassword(&password),
 	}
