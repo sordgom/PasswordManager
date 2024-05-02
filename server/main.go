@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/redis/go-redis/v9"
@@ -25,11 +26,23 @@ func main() {
 }
 
 func runServer(configuration config.Config) {
+	context := context.Background()
+
+	redisAddr := ""
+	if configuration.Environment == "development" {
+		redisAddr = configuration.LocalRedisAddress
+	} else {
+		redisAddr = configuration.RedisAddress
+	}
 	client := redis.NewClient(&redis.Options{
-		Addr:     configuration.RedisAddress,
+		Addr:     redisAddr,
 		Password: "changeme",
 		DB:       0, // default db
 	})
+
+	if err := client.Ping(context).Err(); err != nil {
+		log.Fatal().Err(err).Msg("cannot connect to Redis server")
+	}
 
 	vaultService := config.NewRedisVaultService(client)
 

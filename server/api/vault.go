@@ -32,6 +32,15 @@ func (server *Server) createVault(ctx *gin.Context) {
 		MasterPassword: req.MasterPassword,
 	}
 
+	// Check if the vault already exists
+	_, err := server.VaultService.LoadVaultFromRedis(ctx, vault.Name)
+	if err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Vault already exists",
+		})
+		return
+	}
+
 	// Save the vault using the service
 	if err := server.VaultService.SaveVaultToRedis(ctx, &vault); err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

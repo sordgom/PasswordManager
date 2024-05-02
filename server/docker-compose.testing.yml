@@ -18,7 +18,7 @@ services:
     image: api:1.0
     restart: always
     environment:
-      - ENVIRONMENT=production
+      - ENVIROMENT=testing
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=changeme

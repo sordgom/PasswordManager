@@ -39,6 +39,7 @@ func TestCreateVault(t *testing.T) {
 			vaultName:      name,
 			masterPassword: masterPassword,
 			buildStubs: func(mock *mocks.MockVaultService) {
+				mock.EXPECT().LoadVaultFromRedis(gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 				mock.EXPECT().SaveVaultToRedis(gomock.Any(), gomock.Eq(&vault)).Times(1).Return(nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
@@ -78,6 +79,21 @@ func TestCreateVault(t *testing.T) {
 				require.Equal(t, `{"message":"Name and master password are required"}`, recorder.Body.String())
 			},
 		},
+		// {
+		// 	name: "Empty MP",
+		// 	body: gin.H{
+		// 		"name":            name,
+		// 		"master_password": "",
+		// 	},
+		// 	vaultName:      name,
+		// 	masterPassword: masterPassword,
+		// 	buildStubs: func(mock *mocks.MockVaultService) {
+		// 	},
+		// 	checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+		// 		require.Equal(t, http.StatusBadRequest, recorder.Code)
+		// 		require.Equal(t, `{"message":"Name and master password are required"}`, recorder.Body.String())
+		// 	},
+		// },
 	}
 	for i := range testCases {
 		tc := testCases[i]

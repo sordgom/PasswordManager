@@ -8,6 +8,7 @@ type Config struct {
 	ServerAddress string `mapstructure:"SERVER_ADDRESS"`
 
 	Environment       string `mapstructure:"ENVIRONMENT"`
+	LocalRedisAddress string `mapstructure:"LOCAL_REDIS_ADDRESS"`
 	RedisAddress      string `mapstructure:"REDIS_ADDRESS"`
 	HTTPServerAddress string `mapstructure:"HTTP_SERVER_ADDRESS"`
 	TokenSymmetricKey string `mapstructure:"TOKEN_SYMMETRIC_KEY"`
