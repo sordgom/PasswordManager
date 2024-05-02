@@ -173,3 +173,95 @@ func (server *Server) getPasswordByUrl(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, passwordResponse)
 }
+
+type updatePasswordRequest struct {
+	VaultName       string `json:"vault_name"` //not sure if this should be in query or body.
+	Name            string `json:"name" binding:"required"`
+	MasterPassword  string `json:"master_password" binding:"required"`
+	Password        string `json:"password" binding:"required"`
+	PasswordConfirm string `json:"password_confirm" binding:"required"`
+}
+
+func (server *Server) updatePassword(ctx *gin.Context) {
+	var req updatePasswordRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	vault, err := server.VaultService.LoadVaultFromRedis(ctx, req.VaultName)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Vault not found",
+		})
+		return
+	}
+
+	if !server.VaultService.VerifyMasterPassword(ctx, req.VaultName, req.MasterPassword) {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid master password",
+		})
+		return
+	}
+
+	err = vault.UpdatePassword(req.Name, req.Password, req.PasswordConfirm)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	err = server.VaultService.SaveVaultToRedis(ctx, vault)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Password updated successfully",
+	})
+}
+
+type deletePasswordRequest struct {
+	VaultName      string `form:"vault_name" binding:"required"`
+	MasterPassword string `form:"master_password" binding:"required"`
+	PasswordName   string `form:"password_name" binding:"required"`
+}
+
+func (server *Server) deletePassword(ctx *gin.Context) {
+	var req deletePasswordRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	vault, err := server.VaultService.LoadVaultFromRedis(ctx, req.VaultName)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Vault not found",
+		})
+		return
+	}
+
+	if !server.VaultService.VerifyMasterPassword(ctx, req.VaultName, req.MasterPassword) {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid master password",
+		})
+		return
+	}
+
+	err = vault.DeletePassword(req.PasswordName)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	err = server.VaultService.SaveVaultToRedis(ctx, vault)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Password deleted successfully",
+	})
+}

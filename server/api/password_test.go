@@ -303,6 +303,62 @@ func TestGetPasswordByUrl(t *testing.T) {
 	}
 }
 
+func TestUpdatePassword(t *testing.T) {
+	// Generate a new vault with 2 random passwords
+	vault := randomVault()
+	password := vault.NewPassword("name1", "url1", "username1", "password1", "hint1")
+
+	testCases := []struct {
+		name          string
+		body          gin.H
+		buildStubs    func(mock *mocks.MockVaultService)
+		checkResponse func(t *testing.T, recoder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "Updated",
+			body: gin.H{
+				"vault_name":       vault.Name,
+				"name":             password.Name,
+				"master_password":  vault.MasterPassword,
+				"password":         "password2",
+				"password_confirm": "password2",
+			},
+			buildStubs: func(mock *mocks.MockVaultService) {
+				mock.EXPECT().LoadVaultFromRedis(gomock.Any(), gomock.Any()).Times(1).Return(vault, nil)
+				mock.EXPECT().SaveVaultToRedis(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				mock.EXPECT().VerifyMasterPassword(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+	}
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mock := mocks.NewMockVaultService(ctrl)
+			tc.buildStubs(mock)
+
+			server := newTestServer(t, mock)
+			recorder := httptest.NewRecorder()
+
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := "/password"
+			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(t, recorder)
+		})
+	}
+}
+
 func requireBodyMatchPasswords(t *testing.T, body *bytes.Buffer, responsePasswords []getPasswordsResponse) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
