@@ -11,6 +11,11 @@
       "js":["main.js"]
     }
   ],
+
+  "background": {
+    "scripts": ["background.js"]
+  },
+
   "permissions": [
     "tabs",
     "storage",
