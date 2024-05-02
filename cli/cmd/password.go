@@ -97,9 +97,12 @@ func Run(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 		req := strings.NewReader(fmt.Sprintf(`{"vault_name": "%s", "master_password": "%s"}`, vaultName, masterPassword))
-		res, err := client.Post(fmt.Sprintf(`http://localhost:8080/vault/verify`), "application/json", req)
-		if err != nil || res.StatusCode != 200 {
+		res, err := client.Post("http://localhost:8080/vault/verify", "application/json", req)
+		if err != nil {
 			log.Fatalf("Failed to Verify master password: %v", err)
+		}
+		if res.StatusCode != 200 {
+			log.Fatalf("Failed to Verify master password: %v", res.Status)
 		}
 
 		// Fetch a single password from the vault

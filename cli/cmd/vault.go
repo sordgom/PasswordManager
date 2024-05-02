@@ -29,15 +29,15 @@ var vaultCmd = &cobra.Command{
 
 		var hashedPassword string //Should be hashed first
 		if shouldGenerate {
-			hashedPassword = pkg.GenerateRandomHash()
+			hashedPassword = GenerateRandomHash()
 		} else {
-			hashedPassword = pkg.GenerateHash(args[0])
+			hashedPassword = GenerateHash(args[0])
 		}
 
 		req := strings.NewReader(fmt.Sprintf(`{"name": "%s", "master_password": "%s"}`, vaultFlag, hashedPassword))
 
 		res, err := client.Post("http://localhost:8080/vault", "application/json", req)
-		if err != nil {
+		if err != nil || res.StatusCode != 201 {
 			fmt.Println("error creating vault")
 			return
 		}
