@@ -89,23 +89,25 @@ func Run(cmd *cobra.Command, args []string) {
 			return
 		}
 
-		// Ask user to input master password
-		// fmt.Print("Enter master password: ")
-		// MasterPassword, err := readPasswordFromStdin()
-		// if err != nil {
-		// 	fmt.Fprintf(os.Stderr, "Failed to read password: %v\n", err)
-		// 	os.Exit(1)
-		// }
-		// if !appContext.Vault.VerifyMasterPassword(MasterPassword) {
-		// 	fmt.Println("Master password is incorrect", MasterPassword)
-		// 	return
-		// }
-		res, err := client.Get(fmt.Sprintf(`http://localhost:8080/password?vault_name=%s&password_name=%s`, vaultName, args[0]))
+		// Verify master password
+		fmt.Print("Enter master password: ")
+		masterPassword, err := readPasswordFromStdin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to read password: %v\n", err)
+			os.Exit(1)
+		}
+		req := strings.NewReader(fmt.Sprintf(`{"vault_name": "%s", "master_password": "%s"}`, vaultName, masterPassword))
+		res, err := client.Post(fmt.Sprintf(`http://localhost:8080/vault/verify`), "application/json", req)
+		if err != nil || res.StatusCode != 200 {
+			log.Fatalf("Failed to Verify master password: %v", err)
+		}
+
+		// Fetch a single password from the vault
+		res, err = client.Get(fmt.Sprintf(`http://localhost:8080/password?vault_name=%s&password_name=%s`, vaultName, args[0]))
 		if err != nil || res.StatusCode != 200 {
 			log.Fatalf("Failed to list passwords: %v", err)
 		}
 		defer res.Body.Close()
-
 		var password getPasswordResponse
 		if err := json.NewDecoder(res.Body).Decode(&password); err != nil {
 			log.Fatal("Error decoding JSON response:", err)

@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sordgom/PasswordManager/cli/pkg"
-
 	"github.com/spf13/cobra"
 )
 

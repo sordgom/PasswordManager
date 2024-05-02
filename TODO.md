@@ -3,5 +3,5 @@
 
 1. Add url to getPasswords response
 2. Add a way to verify master password from server side
-3. add modify and delete password API
+3. add modify, delete, and verify MP endpoints
 4. store in AWS localstack
