@@ -69,7 +69,6 @@ func (v *Vault) GetPasswordByUrl(url string) (Password, error) {
 	}
 	for _, password := range v.Passwords {
 		if matchURL(url, password.Url) {
-			fmt.Println(password)
 			return password, nil
 		}
 	}

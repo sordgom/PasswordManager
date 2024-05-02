@@ -34,6 +34,7 @@ func (server *Server) setupRouter() {
 
 	// Vault API
 	router.POST("/vault", server.createVault)
+	router.POST("/vault/verify", server.verifyMasterPassword)
 
 	// Password API
 	router.POST("/password", server.createPassword)
