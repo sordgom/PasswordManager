@@ -1,4 +1,5 @@
 module github.com/sordgom/PasswordManager/cli
+
 go 1.22
 
 require (

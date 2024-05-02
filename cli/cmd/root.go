@@ -5,17 +5,13 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+	"net/http"
 
-	"github.com/sordgom/PasswordManager/cli/pkg"
-
-	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cobra"
 )
 
 type AppContext struct {
-	Client *redis.Client
-	Vault  *pkg.Vault
+	Client http.Client
 }
 
 var appContext *AppContext
@@ -31,30 +27,16 @@ Konache is a  is a CLI Password manager that allows users to:
 - List all the passwords in a vault.
 - Retrieve a password from a vault.
 PS: we never store or know about your passwords.`,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		vaultFlag, _ := cmd.Flags().GetString("vault")
-		if vaultFlag == "" {
-			fmt.Println("Please specify a vault with -v or --vault")
-			return
-		}
-		vault, err := pkg.LoadVaultFromRedis(appContext.Client, vaultFlag)
-		if err != nil {
-			fmt.Errorf("failed to load vault: %v", err)
-			return
-		}
-		appContext.Vault = vault
-	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() error {
 	ctx := context.Background()
-	client := initRedisClient()
 	appContext = &AppContext{
-		Client: client,
+		Client: *http.DefaultClient,
 	}
-	ctx = context.WithValue(ctx, "client", client)
+	ctx = context.WithValue(ctx, "client", appContext.Client)
 	return rootCmd.ExecuteContext(ctx)
 }
 
@@ -69,13 +51,4 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-func initRedisClient() *redis.Client {
-	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // default db
-	})
-	return client
 }

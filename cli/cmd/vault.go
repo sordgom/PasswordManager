@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"fmt"
-	"log"
+	"strings"
 
 	"github.com/sordgom/PasswordManager/cli/pkg"
 
@@ -36,14 +36,15 @@ var vaultCmd = &cobra.Command{
 			hashedPassword = pkg.GenerateHash(args[0])
 		}
 
-		vault := pkg.New(vaultFlag, hashedPassword)
+		req := strings.NewReader(fmt.Sprintf(`{"name": "%s", "master_password": "%s"}`, vaultFlag, hashedPassword))
 
-		err := pkg.SaveVaultToRedis(client, &vault)
+		res, err := client.Post("http://localhost:8080/vault", "application/json", req)
 		if err != nil {
-			log.Fatalf("Failed to save vault: %v", err)
+			fmt.Println("error creating vault")
+			return
 		}
-
-		fmt.Printf("vault %s created", vault.Name)
+		fmt.Println("Vault created successfully")
+		defer res.Body.Close()
 	},
 }
 

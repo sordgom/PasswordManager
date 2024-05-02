@@ -5,11 +5,12 @@ package cmd
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
-
-	"github.com/sordgom/PasswordManager/cli/pkg"
+	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/rodaine/table"
@@ -26,7 +27,7 @@ var passwordCmd = &cobra.Command{
 }
 
 func Run(cmd *cobra.Command, args []string) {
-	appContext, _ := load()
+	client := appContext.Client
 
 	// Local flags
 	addFlag, _ := cmd.Flags().GetBool("add")
@@ -34,6 +35,9 @@ func Run(cmd *cobra.Command, args []string) {
 	listFlag, _ := cmd.Flags().GetBool("list")
 	getFlag, _ := cmd.Flags().GetBool("get")
 	delFlag, _ := cmd.Flags().GetBool("del")
+
+	// Global flags
+	vaultName, _ := cmd.Flags().GetString("vault")
 
 	// Table setup
 	headerFmt := color.New(color.FgBlue, color.Underline).SprintfFunc()
@@ -45,125 +49,139 @@ func Run(cmd *cobra.Command, args []string) {
 			log.Fatal("Please provide the name, url, username, password and hint for the password")
 			return
 		}
-		// I need to check if I have a vault
-		appContext.Vault.NewPassword(args[0], args[1], args[2], args[3], args[4])
 
-		err := pkg.SaveVaultToRedis(appContext.Client, appContext.Vault)
+		req := strings.NewReader(fmt.Sprintf(`{"name": "%s", "url": "%s", "username": "%s", "password": "%s", "hint": "%s"}`, args[0], args[1], args[2], args[3], args[4]))
+		res, err := client.Post(fmt.Sprintf(`http://localhost:8080/password?vault_name=%s`, vaultName), "application/json", req)
 		if err != nil {
-			log.Fatalf("Failed to save vault: %v", err)
+			log.Fatalf("Failed to add password: %v", err)
 		}
-
 		fmt.Printf("\nPassword was added successfully")
+		defer res.Body.Close()
 	}
 	if listFlag {
-		fmt.Println("Listing all passwords from Vault", appContext.Vault.Name)
+		fmt.Println("Listing all passwords from Vault", vaultName)
+		time.Sleep(1 * time.Second)
 
 		tbl := table.New("Name", "URL", "Hint")
 		tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
 
-		passwords := appContext.Vault.GetPasswords()
+		res, err := client.Get(fmt.Sprintf(`http://localhost:8080/passwords?vault_name=%s`, vaultName))
+		if err != nil || res.StatusCode != 200 {
+			log.Fatalf("Failed to list passwords: %v", err)
+		}
+		defer res.Body.Close()
+
+		var passwords []getPasswordResponse
+		if err := json.NewDecoder(res.Body).Decode(&passwords); err != nil {
+			log.Fatal("Error decoding JSON response:", err)
+		}
+
 		for _, password := range passwords {
-			tbl.AddRow(password[0], password[1], password[2])
+			tbl.AddRow(password.Name, password.Password, password.Hint)
 		}
 
 		tbl.Print()
 	}
-	if modifyFlag {
-		fmt.Println("Updating password")
-		if len(args) != 1 {
-			log.Fatal("Please provide the password name")
-			return
-		}
-
-		// Ask user to input master password
-		fmt.Print("Enter master password: ")
-		MasterPassword, err := readPasswordFromStdin()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to read password: %v\n", err)
-			os.Exit(1)
-		}
-		if !appContext.Vault.VerifyMasterPassword(MasterPassword) {
-			fmt.Println("Master password is incorrect", MasterPassword)
-			return
-		}
-
-		// Ask user to input new password and to confirm it
-		fmt.Print("Enter new password: ")
-		NewPassword, err := readPasswordFromStdin()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to read new password: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Print("Confirm new password: ")
-		ConfirmNewPassword, err := readPasswordFromStdin()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to read confirm password: %v\n", err)
-			os.Exit(1)
-		}
-
-		err = appContext.Vault.UpdatePassword(args[0], NewPassword, ConfirmNewPassword)
-		if err != nil {
-			log.Fatalf("\nFailed to update password: %s", args[0])
-		}
-
-		err = pkg.SaveVaultToRedis(appContext.Client, appContext.Vault)
-		if err != nil {
-			log.Fatalf("Failed to save vault: %v", err)
-		}
-
-		fmt.Printf("\nPassword was updated successfully")
-	}
 	if getFlag {
-		fmt.Println("Listing The password value from Vault", appContext.Vault.Name)
+		fmt.Println("Listing The password value from Vault", vaultName)
 		if len(args) != 1 {
 			log.Fatal("Please provide the password name")
 			return
 		}
 
 		// Ask user to input master password
-		fmt.Print("Enter master password: ")
-		MasterPassword, err := readPasswordFromStdin()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to read password: %v\n", err)
-			os.Exit(1)
+		// fmt.Print("Enter master password: ")
+		// MasterPassword, err := readPasswordFromStdin()
+		// if err != nil {
+		// 	fmt.Fprintf(os.Stderr, "Failed to read password: %v\n", err)
+		// 	os.Exit(1)
+		// }
+		// if !appContext.Vault.VerifyMasterPassword(MasterPassword) {
+		// 	fmt.Println("Master password is incorrect", MasterPassword)
+		// 	return
+		// }
+		res, err := client.Get(fmt.Sprintf(`http://localhost:8080/password?vault_name=%s&password_name=%s`, vaultName, args[0]))
+		if err != nil || res.StatusCode != 200 {
+			log.Fatalf("Failed to list passwords: %v", err)
 		}
-		if !appContext.Vault.VerifyMasterPassword(MasterPassword) {
-			fmt.Println("Master password is incorrect", MasterPassword)
-			return
+		defer res.Body.Close()
+
+		var password getPasswordResponse
+		if err := json.NewDecoder(res.Body).Decode(&password); err != nil {
+			log.Fatal("Error decoding JSON response:", err)
 		}
 
-		password, err := appContext.Vault.GetPassword(args[0])
-		if err != nil {
-			log.Fatalf("\nFailed to get password: %s", args[0])
-		}
+		fmt.Println("Password:", password.Password)
+	}
+	if modifyFlag {
+		// fmt.Println("Updating password")
+		// if len(args) != 1 {
+		// 	log.Fatal("Please provide the password name")
+		// 	return
+		// }
 
-		passwordString := appContext.Vault.ReadPassword(&password)
-		fmt.Println("Password:", passwordString)
+		// // Ask user to input master password
+		// fmt.Print("Enter master password: ")
+		// MasterPassword, err := readPasswordFromStdin()
+		// if err != nil {
+		// 	fmt.Fprintf(os.Stderr, "Failed to read password: %v\n", err)
+		// 	os.Exit(1)
+		// }
+		// if !appContext.Vault.VerifyMasterPassword(MasterPassword) {
+		// 	fmt.Println("Master password is incorrect", MasterPassword)
+		// 	return
+		// }
+
+		// // Ask user to input new password and to confirm it
+		// fmt.Print("Enter new password: ")
+		// NewPassword, err := readPasswordFromStdin()
+		// if err != nil {
+		// 	fmt.Fprintf(os.Stderr, "Failed to read new password: %v\n", err)
+		// 	os.Exit(1)
+		// }
+		// fmt.Print("Confirm new password: ")
+		// ConfirmNewPassword, err := readPasswordFromStdin()
+		// if err != nil {
+		// 	fmt.Fprintf(os.Stderr, "Failed to read confirm password: %v\n", err)
+		// 	os.Exit(1)
+		// }
+
+		// err = appContext.Vault.UpdatePassword(args[0], NewPassword, ConfirmNewPassword)
+		// if err != nil {
+		// 	log.Fatalf("\nFailed to update password: %s", args[0])
+		// }
+
+		// err = pkg.SaveVaultToRedis(appContext.Client, appContext.Vault)
+		// if err != nil {
+		// 	log.Fatalf("Failed to save vault: %v", err)
+		// }
+
+		// fmt.Printf("\nPassword was updated successfully")
 	}
 	if delFlag {
-		fmt.Println("Deleting password")
-		if len(args) != 1 {
-			log.Fatal("Please provide the password name")
-			return
-		}
+		// fmt.Println("Deleting password")
+		// if len(args) != 1 {
+		// 	log.Fatal("Please provide the password name")
+		// 	return
+		// }
 
-		// Ask user to input master password
-		fmt.Print("Enter master password: ")
-		MasterPassword, err := readPasswordFromStdin()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to read password: %v\n", err)
-			os.Exit(1)
-		}
-		if !appContext.Vault.VerifyMasterPassword(MasterPassword) {
-			fmt.Println("Master password is incorrect", MasterPassword)
-			return
-		}
+		// // Ask user to input master password
+		// fmt.Print("Enter master password: ")
+		// MasterPassword, err := readPasswordFromStdin()
+		// if err != nil {
+		// 	fmt.Fprintf(os.Stderr, "Failed to read password: %v\n", err)
+		// 	os.Exit(1)
+		// }
+		// if !appContext.Vault.VerifyMasterPassword(MasterPassword) {
+		// 	fmt.Println("Master password is incorrect", MasterPassword)
+		// 	return
+		// }
 
-		err = appContext.Vault.DeletePassword(args[0])
-		if err != nil {
-			log.Fatalf("\nFailed to delete password: %s", args[0])
-		}
-		fmt.Println("Password was deleted successfully")
+		// err = appContext.Vault.DeletePassword(args[0])
+		// if err != nil {
+		// 	log.Fatalf("\nFailed to delete password: %s", args[0])
+		// }
+		// fmt.Println("Password was deleted successfully")
 
 	}
 }
@@ -186,4 +204,10 @@ func readPasswordFromStdin() (string, error) {
 		return "", err
 	}
 	return password[:len(password)-1], nil
+}
+
+type getPasswordResponse struct {
+	Name     string `json:"name"`
+	Hint     string `json:"hint"`
+	Password string `json:"password"`
 }
